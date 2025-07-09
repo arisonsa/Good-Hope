@@ -33,14 +33,11 @@ class BlocksServiceProvider extends ServiceProvider
     {
         if (function_exists('register_block_type_from_metadata')) {
             // Instantiate block registration classes
-            // The constructor of these classes should hook into 'init' to register the block.
+            // Their constructors hook into 'init' to register the blocks.
             new FeaturedCalloutBlock($this->app);
-
-            // Ensure NewsletterSignupBlock is also instantiated if its registration is in its constructor
-            // If NewsletterSignupBlock's registration is already handled elsewhere (e.g. directly in NewsletterServiceProvider's boot),
-            // then no need to instantiate it again here.
-            // For consistency, let's assume all block registrations are handled by instantiating their respective classes.
             new NewsletterSignupBlock($this->app);
+            new CardGridBlock($this->app);      // Add this
+            new CardItemBlock($this->app);      // Add this
         }
     }
 }

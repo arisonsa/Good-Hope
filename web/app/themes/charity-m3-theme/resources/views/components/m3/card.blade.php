@@ -5,8 +5,9 @@
     'title' => null,
     'subtitle' => null,
     'variant' => 'elevated', // 'elevated', 'filled', 'outlined'
-    'interactive' => false, // If true and href, whole card is a link
-    'actions' => null, // Slot for card actions
+    'interactive' => false,
+    'actions' => null,      // Slot object for actions when used directly in Blade
+    'actionsHtml' => '',    // Pre-rendered HTML string for actions from PHP render_callback
 ])
 
 <charity-card
@@ -23,7 +24,11 @@
     {{ $slot }}
 
     {{-- Named slot for actions --}}
-    @if ($actions && $actions->isNotEmpty())
+    @if (!empty($actionsHtml))
+        <div slot="actions">
+            {!! $actionsHtml !!}
+        </div>
+    @elseif ($actions && $actions->isNotEmpty())
         <div slot="actions">
             {{ $actions }}
         </div>

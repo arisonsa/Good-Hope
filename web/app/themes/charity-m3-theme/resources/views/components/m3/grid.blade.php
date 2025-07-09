@@ -11,7 +11,7 @@
     gap="{{ $gap }}"
     {{ $attributes }} {{-- Pass through any additional HTML attributes --}}
 >
-    {{ $slot }}
+    {!! $slotContent ?? $slot !!}
 </charity-grid>
 
 {{--

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "charity-m3/card-item",
+  "title": "Card Item (M3)",
+  "category": "charity-m3-components",
+  "description": "An individual card item to be used within a Card Grid. Displays content in an M3 card style.",
+  "keywords": ["card", "item", "content", "m3", "charity"],
+  "icon": "text-page",
+  "textdomain": "charity-m3",
+  "parent": ["charity-m3/card-grid"],
+  "attributes": {
+    "title": {
+      "type": "string",
+      "source": "html",
+      "selector": ".wp-block-charity-m3-card-item__title",
+      "default": ""
+    },
+    "subtitle": {
+      "type": "string",
+      "source": "html",
+      "selector": ".wp-block-charity-m3-card-item__subtitle",
+      "default": ""
+    },
+    "text": {
+      "type": "string",
+      "source": "html",
+      "selector": ".wp-block-charity-m3-card-item__text",
+      "default": ""
+    },
+    "imageId": {
+      "type": "number"
+    },
+    "imageUrl": {
+      "type": "string",
+      "default": ""
+    },
+    "imageAlt": {
+      "type": "string",
+      "default": ""
+    },
+    "href": {
+      "type": "string",
+      "default": ""
+    },
+    "variant": {
+      "type": "string",
+      "default": "elevated"
+    },
+    "interactive": {
+      "type": "boolean",
+      "default": false
+    },
+    "button1Text": { "type": "string", "default": "" },
+    "button1Href": { "type": "string", "default": "" },
+    "button1Type": { "type": "string", "default": "text" },
+    "button1Icon": { "type": "string", "default": "" },
+    "button2Text": { "type": "string", "default": "" },
+    "button2Href": { "type": "string", "default": "" },
+    "button2Type": { "type": "string", "default": "text" },
+    "button2Icon": { "type": "string", "default": "" }
+  },
+  "supports": {
+    "html": false,
+    "reusable": false,
+    "inserter": true
+  },
+  "editorScript": "charity-m3-card-item-editor-script"
+}

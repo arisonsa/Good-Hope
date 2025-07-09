@@ -24,7 +24,9 @@ mix.setResourceRoot('../'); // Relative to public path, so it points to theme_ro
 mix.ts('resources/scripts/main.ts', 'public/scripts') // Output: public/scripts/main.js (or .ts if source maps link it)
    // Gutenberg block editor scripts
    .js('app/Blocks/NewsletterSignup/newsletter-signup.editor.js', 'public/scripts/blocks/newsletter-signup-editor.js')
-   .js('app/Blocks/FeaturedCallout/edit.js', 'public/scripts/blocks/featured-callout-editor.js') // New entry point
+   .js('app/Blocks/FeaturedCallout/edit.js', 'public/scripts/blocks/featured-callout-editor.js')
+   .js('app/Blocks/CardGrid/edit.js', 'public/scripts/blocks/card-grid-editor.js') // New: CardGrid editor script
+   .js('app/Blocks/CardItem/edit.js', 'public/scripts/blocks/card-item-editor.js') // New: CardItem editor script
    .sass('resources/styles/main.scss', 'public/styles/main.css') // For global M3 tokens & minimal base styles
    .options({
        postCss: [
