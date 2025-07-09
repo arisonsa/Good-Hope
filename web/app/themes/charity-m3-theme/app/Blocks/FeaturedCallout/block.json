@@ -1,0 +1,94 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "charity-m3/featured-callout",
+  "title": "Featured Callout / Hero",
+  "category": "charity-m3-components",
+  "description": "A prominent section with a title, subtitle, background, and call-to-action buttons. Uses the M3 Hero component.",
+  "keywords": ["hero", "banner", "callout", "featured", "m3", "charity"],
+  "icon": "megaphone",
+  "textdomain": "charity-m3",
+  "attributes": {
+    "title": {
+      "type": "string",
+      "source": "html",
+      "selector": ".wp-block-charity-m3-featured-callout__title",
+      "default": "Featured Title"
+    },
+    "subtitle": {
+      "type": "string",
+      "source": "html",
+      "selector": ".wp-block-charity-m3-featured-callout__subtitle",
+      "default": "Compelling subtitle to engage visitors."
+    },
+    "backgroundImageId": {
+      "type": "number"
+    },
+    "backgroundImageUrl": {
+      "type": "string",
+      "source": "attribute",
+      "selector": ".wp-block-charity-m3-featured-callout__background",
+      "attribute": "data-background-url",
+      "default": ""
+    },
+    "showOverlay": {
+      "type": "boolean",
+      "default": true
+    },
+    "backgroundColor": {
+      "type": "string",
+      "default": "var(--md-sys-color-surface-variant)"
+    },
+    "textColor": {
+      "type": "string",
+      "default": "var(--md-sys-color-on-surface-variant)"
+    },
+    "contentWidth": {
+      "type": "string",
+      "default": "container"
+    },
+    "textAlignment": {
+      "type": "string",
+      "default": "center"
+    },
+    "minHeight": {
+      "type": "string",
+      "default": "60vh"
+    },
+    "buttons": {
+      "type": "array",
+      "default": [
+        {
+          "text": "Learn More",
+          "href": "#",
+          "type": "filled",
+          "icon": "",
+          "target": "",
+          "rel": ""
+        }
+      ],
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "href": { "type": "string" },
+          "type": { "type": "string", "default": "filled" },
+          "icon": { "type": "string" },
+          "target": { "type": "string" },
+          "rel": { "type": "string" }
+        }
+      }
+    },
+    "blockId": {
+      "type": "string"
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"],
+    "anchor": true
+  },
+  "editorScript": "charity-m3-featured-callout-editor-script" // Use a handle
+  // "style": "file:./style.css", // If block-specific frontend styles needed beyond the web component
+  // "editorStyle": "file:./editor.css" // If block-specific editor styles needed
+}

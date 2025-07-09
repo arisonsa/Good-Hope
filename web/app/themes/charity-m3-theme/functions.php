@@ -48,7 +48,8 @@ if (! class_exists(\Roots\Acorn\Application::class)) {
             \Roots\Acorn\Application::configure(untrailingslashit(get_template_directory()))
                 ->withProviders([
                     \App\Providers\ThemeServiceProvider::class,
-                    \App\Providers\NewsletterServiceProvider::class, // Add this line
+                    \App\Providers\NewsletterServiceProvider::class,
+                    \App\Providers\BlocksServiceProvider::class, // Add this line
                 ])
                 ->boot();
         } catch (\Exception $e) {
