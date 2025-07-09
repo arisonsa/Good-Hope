@@ -1,0 +1,18 @@
+/*
+Theme Name: Charity M3 Theme
+Theme URI: https://example.com/charity-m3-theme
+Author: Jules AI
+Author URI: https://example.com
+Description: A multi-site theme for charities and NGOs using Material Design 3, Bedrock, and Acorn.
+Version: 0.1.0
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: charity-m3
+Tags: bedrock, acorn, material-design, multisite, charity, ngo
+Requires PHP: 8.1
+Requires at least: 6.0
+Tested up to: 6.4
+*/
+
+/* Styles will primarily be handled via M3 components and dedicated CSS files,
+   but this file is required by WordPress. */

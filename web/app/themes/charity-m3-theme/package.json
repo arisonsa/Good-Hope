@@ -1,0 +1,27 @@
+{
+  "name": "charity-m3-theme",
+  "version": "0.1.0",
+  "description": "Assets and build process for Charity M3 Theme",
+  "main": "resources/scripts/main.js",
+  "scripts": {
+    "dev": "mix",
+    "watch": "mix watch",
+    "watch-poll": "mix watch -- --watch-options-poll=1000",
+    "hot": "mix watch --hot",
+    "build": "mix --production"
+  },
+  "author": "Jules AI",
+  "license": "MIT",
+  "devDependencies": {
+    "laravel-mix": "^6.0.49",
+    "postcss": "^8.4.38",
+    "@rollup/plugin-node-resolve": "^15.0.0", // For MWC if not using Mix's default handling
+    "rollup": "^3.0.0" // For MWC if not using Mix's default handling
+    // Add other dev dependencies like sass, sass-loader if needed
+  },
+  "dependencies": {
+    // @material/web is installed at the project root,
+    // but we might list it here if we were managing it per-theme
+    // and not symlinking or copying. For now, assume project root.
+  }
+}
