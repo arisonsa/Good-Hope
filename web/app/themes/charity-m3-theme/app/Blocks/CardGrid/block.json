@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "charity-m3/card-grid",
+  "title": "Card Grid (M3)",
+  "category": "charity-m3-components",
+  "description": "A container for displaying a grid of M3 Card Items. Uses the M3 Grid component.",
+  "keywords": ["grid", "card", "layout", "m3", "charity", "container"],
+  "icon": "grid-view",
+  "textdomain": "charity-m3",
+  "attributes": {
+    "gridTag": {
+      "type": "string",
+      "default": "div"
+    },
+    "cols": {
+      "type": "string",
+      "default": "responsive-default"
+    },
+    "gap": {
+      "type": "string",
+      "default": "6"
+    },
+    "allowedBlocks": {
+        "type": "array",
+        "default": ["charity-m3/card-item"]
+    }
+    // 'template' attribute could be used to define a default set of inner blocks, e.g.:
+    // "template": [
+    //     ["charity-m3/card-item", {}],
+    //     ["charity-m3/card-item", {}],
+    //     ["charity-m3/card-item", {}]
+    // ]
+  },
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"],
+    "anchor": true,
+    "inserter": true
+  },
+  "providesContext": {
+    // Example: if grid settings needed to influence inner card items directly via context
+    // "charityM3/cardGrid/cols": "cols",
+    // "charityM3/cardGrid/gap": "gap"
+  },
+  "editorScript": "charity-m3-card-grid-editor-script"
+}

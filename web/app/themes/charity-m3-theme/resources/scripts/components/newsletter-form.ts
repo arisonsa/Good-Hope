@@ -3,10 +3,9 @@ import { customElement, property, state } from 'lit/decorators.js';
 import * as stylex from '@stylexjs/stylex';
 import { M3SysColors, M3TypeScale, M3SysShape } from '../tokens';
 
-// Assuming MWC text-field and button are still desired for their built-in M3 functionality
-// Otherwise, these would be custom-built with StyleXJS too.
+// Assuming MWC text-field is still desired. Button will be replaced.
 import '@material/web/textfield/outlined-text-field.js';
-import '@material/web/button/filled-button.js';
+// charity-button is imported globally in main.ts, so no direct import needed here if already done.
 
 const styles = stylex.create({
   form: {
@@ -126,9 +125,9 @@ export class NewsletterSignupForm extends LitElement {
           required
           class=${stylex.props(styles.textField).className}
         ></md-outlined-text-field>
-        <md-filled-button type="submit">
+        <charity-button type="submit" variant="filled">
           ${this.buttonText}
-        </md-filled-button>
+        </charity-button>
       </form>
     `;
   }

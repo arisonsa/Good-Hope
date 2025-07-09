@@ -10,9 +10,9 @@ class Card extends Component
     public ?string $imageUrl;
     public ?string $imageAlt;
     public ?string $title;
-    public ?string $subtitle; // Smaller text below title
-    public ?string $variant; // 'elevated', 'filled', 'outlined'
-    public bool $interactive; // If true, whole card is a link if href is provided
+    public ?string $subtitle;
+    public string $variant; // 'elevated', 'filled', 'outlined'
+    public bool $interactive;
 
     /**
      * Create a new component instance.
@@ -22,39 +22,28 @@ class Card extends Component
      * @param string|null $imageAlt Alt text for the image
      * @param string|null $title Card title
      * @param string|null $subtitle Smaller text often below title
-     * @param string $variant Card style: 'elevated', 'filled', 'outlined' (maps to MWC)
+     * @param string $variant Card style: 'elevated', 'filled', 'outlined'
      * @param bool $interactive If true and href is present, makes the whole card a link
      * @return void
      */
     public function __construct(
         ?string $href = null,
         ?string $imageUrl = null,
-        ?string $imageAlt = '',
+        ?string $imageAlt = null, // Allow null to let Lit component default if needed
         ?string $title = null,
         ?string $subtitle = null,
-        string $variant = 'elevated', // MWC default is often filled or elevated
+        string $variant = 'elevated',
         bool $interactive = false
     ) {
         $this->href = $href;
         $this->imageUrl = $imageUrl;
-        $this->imageAlt = $imageAlt ?: $title; // Default alt to title if not provided
+        $this->imageAlt = $imageAlt ?? $title ?? ''; // Default alt to title if imageAlt is null
         $this->title = $title;
         $this->subtitle = $subtitle;
         $this->variant = $variant;
-        $this->interactive = $interactive && $href; // Interactive only if href is also present
-    }
-
-    /**
-     * Get the appropriate MWC tag name for the card variant.
-     */
-    public function mwcCardTag(): string
-    {
-        // Note: As of current @material/web, there isn't a direct <md-card> element.
-        // Cards are constructed using divs with appropriate M3 styling (elevation, shape, color).
-        // We will use regular HTML elements and apply M3 classes/styles.
-        // If a specific MWC card element becomes available, this can be updated.
-        // For now, we simulate the concept of variants through classes.
-        return 'div'; // Placeholder, actual styling will be class-based
+        // Lit component handles the logic: interactive is only true if href is also present.
+        // Blade component can simply pass the user's intent.
+        $this->interactive = $interactive;
     }
 
 

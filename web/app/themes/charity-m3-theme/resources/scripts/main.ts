@@ -10,11 +10,12 @@
 import './components/charity-hero'; // Registers <charity-hero>
 
 import './components/newsletter-form'; // Registers <newsletter-signup-form>
+import './components/charity-card'; // Registers <charity-card>
+import './components/charity-grid'; // Registers <charity-grid>
+import './components/charity-cta-banner'; // Registers <charity-cta-banner>
+import './components/charity-button'; // Registers <charity-button>
 
 // Example:
-// import './components/CharityCard';
-// import './components/CharityGrid';
-// import './components/CharityCtaBanner';
 
 // Example: Newsletter Signup Form (if refactored to Lit/StyleXJS)
 // import './components/NewsletterForm';
