@@ -2,63 +2,129 @@
  * Main theme SCSS file.
  */
 
-// 1. Material Design 3 Theming
-// MWC components are largely self-contained and use CSS Shadow Parts for styling.
-// Global theming is often done via CSS Custom Properties.
-// Ref: https://material-web.dev/theming/material-theming/
-// Ref: https://material-web.dev/theming/color/
+// 1. Material Design 3 Theming - CSS Custom Properties
+// Ref: https://m3.material.io/styles/color/the-color-system/tokens
+// Ref: https://m3.material.io/styles/typography/tokens
+// Ref: https://m3.material.io/styles/shape/shape-scale-tokens
 
 // It's good practice to define these within a :root or specific scope.
-// For now, we'll define some placeholders. These should be customized.
+// These are default M3 values. Customizer will override primary/secondary.
 :root {
-  // Material Theme colors (replace with your actual color palette)
-  // These are just examples; you'll need to generate a full M3 palette.
-  // Use https://m3.material.io/theme-builder to generate a palette.
+  // --- M3 Color System Tokens (Light Theme - Partial Set) ---
+  // Primary
   --md-sys-color-primary: #6750A4;
   --md-sys-color-on-primary: #FFFFFF;
   --md-sys-color-primary-container: #EADDFF;
   --md-sys-color-on-primary-container: #21005D;
+  // Secondary
   --md-sys-color-secondary: #625B71;
   --md-sys-color-on-secondary: #FFFFFF;
   --md-sys-color-secondary-container: #E8DEF8;
   --md-sys-color-on-secondary-container: #1D192B;
+  // Tertiary
   --md-sys-color-tertiary: #7D5260;
   --md-sys-color-on-tertiary: #FFFFFF;
   --md-sys-color-tertiary-container: #FFD8E4;
   --md-sys-color-on-tertiary-container: #31111D;
+  // Error
   --md-sys-color-error: #B3261E;
   --md-sys-color-on-error: #FFFFFF;
   --md-sys-color-error-container: #F9DEDC;
   --md-sys-color-on-error-container: #410E0B;
-  --md-sys-color-background: #FFFBFE;
+  // Neutral Surfaces
+  --md-sys-color-background: #FFFBFE; // Often same as surface for apps
   --md-sys-color-on-background: #1C1B1F;
   --md-sys-color-surface: #FFFBFE;
   --md-sys-color-on-surface: #1C1B1F;
   --md-sys-color-surface-variant: #E7E0EC;
   --md-sys-color-on-surface-variant: #49454F;
+  --md-sys-color-surface-dim: #DED8E1; // Example, derived
+  --md-sys-color-surface-bright: #FFFBFE; // Example, derived
+  --md-sys-color-surface-container-lowest: #FFFFFF;
+  --md-sys-color-surface-container-low: #F7F2FA;
+  --md-sys-color-surface-container: #F3EDF7;
+  --md-sys-color-surface-container-high: #ECE6F0;
+  --md-sys-color-surface-container-highest: #E6E0E9;
+  // Outline
   --md-sys-color-outline: #79747E;
-  --md-sys-color-shadow: #000000;
+  --md-sys-color-outline-variant: #C4C6CC; // Example
+  // Inverse (for dark elements on light background or vice-versa)
+  --md-sys-color-inverse-primary: #D0BCFF;
   --md-sys-color-inverse-surface: #313033;
   --md-sys-color-inverse-on-surface: #F4EFF4;
-  --md-sys-color-inverse-primary: #D0BCFF;
+  // Shadow & Scrim
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
 
-  // Typography (MWC components generally use Roboto by default if available)
-  // --md-sys-typescale-headline-small-font-family-name: 'Roboto'; // Example
-  // --md-ref-typeface-brand: 'Roboto', sans-serif; // Example
-  // --md-ref-typeface-plain: 'Roboto', sans-serif; // Example
 
-  // Shape (Border radius)
-  // --md-sys-shape-corner-extra-small: 4px;
-  // --md-sys-shape-corner-small: 8px;
-  // --md-sys-shape-corner-medium: 12px;
-  // --md-sys-shape-corner-large: 16px;
-  // --md-sys-shape-corner-extra-large: 28px;
-  // --md-sys-shape-corner-full: 9999px; // For pills, etc.
+  // --- M3 Typography Reference Tokens (Simplified - MWC handles detailed typescales) ---
+  // These define the font families. Specific typescale tokens (font-size, line-height, etc.)
+  // are typically applied by MWC components or a full M3 CSS library.
+  --md-ref-typeface-brand: 'Roboto', sans-serif; // Or your brand font
+  --md-ref-typeface-plain: 'Roboto', sans-serif; // Or your plain text font
+
+  // --- M3 Shape System Tokens (Corner Radius) ---
+  --md-sys-shape-corner-none: 0px;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px; // Common for cards
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 9999px; // For pills, circular buttons
 }
+
+// --- Dark Mode Color Tokens (Example - would need full palette generation) ---
+// .dark or [data-theme="dark"]
+@media (prefers-color-scheme: dark) {
+  :root { // Or a .dark class selector if using manual toggle
+    // Primary
+    --md-sys-color-primary: #D0BCFF;
+    --md-sys-color-on-primary: #381E72;
+    --md-sys-color-primary-container: #4F378B;
+    --md-sys-color-on-primary-container: #EADDFF;
+    // Secondary
+    --md-sys-color-secondary: #CCC2DC;
+    --md-sys-color-on-secondary: #332D41;
+    --md-sys-color-secondary-container: #4A4458;
+    --md-sys-color-on-secondary-container: #E8DEF8;
+    // Tertiary
+    --md-sys-color-tertiary: #EFB8C8;
+    --md-sys-color-on-tertiary: #492532;
+    --md-sys-color-tertiary-container: #633B48;
+    --md-sys-color-on-tertiary-container: #FFD8E4;
+    // Error
+    --md-sys-color-error: #F2B8B5;
+    --md-sys-color-on-error: #601410;
+    --md-sys-color-error-container: #8C1D18;
+    --md-sys-color-on-error-container: #F9DEDC;
+    // Neutral Surfaces
+    --md-sys-color-background: #1C1B1F;
+    --md-sys-color-on-background: #E6E1E5;
+    --md-sys-color-surface: #1C1B1F; // Often same as background
+    --md-sys-color-on-surface: #E6E1E5;
+    --md-sys-color-surface-variant: #49454F;
+    --md-sys-color-on-surface-variant: #CAC4D0;
+    --md-sys-color-surface-dim: #141218; // Example
+    --md-sys-color-surface-bright: #3B383E; // Example
+    --md-sys-color-surface-container-lowest: #0F0D13;
+    --md-sys-color-surface-container-low: #1D1B20;
+    --md-sys-color-surface-container: #211F26;
+    --md-sys-color-surface-container-high: #2B2931;
+    --md-sys-color-surface-container-highest: #36343B;
+    // Outline
+    --md-sys-color-outline: #938F99;
+    --md-sys-color-outline-variant: #444746; // Example
+    // Inverse
+    --md-sys-color-inverse-primary: #6750A4;
+    --md-sys-color-inverse-surface: #E6E1E5;
+    --md-sys-color-inverse-on-surface: #313033;
+  }
+}
+
 
 // Body base styles
 body {
-  font-family: 'Roboto', sans-serif; // Ensure Roboto is loaded (see step d)
+  font-family: var(--md-ref-typeface-plain, 'Roboto', sans-serif); // Use M3 typeface token
   background-color: var(--md-sys-color-background);
   color: var(--md-sys-color-on-background);
   margin: 0;
@@ -67,19 +133,127 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-// Basic responsive container (can be replaced by MWC layout components if available/suitable)
+// --- Global Element Styling using M3 Tokens ---
+// Styles for base HTML elements for content not rendered by StyleXJS components (e.g., classic editor content).
+// These directly use the M3 CSS variables defined above.
+// Note: MWC's adopted `md-typescale-styles.css` provides utility classes like `.md-typescale-body-large`.
+// If that's adopted globally in main.ts, these direct styles might be less critical or can be more specific.
+// For now, let's assume we want some base styling for raw HTML.
+
+h1 {
+  font-family: var(--md-ref-typeface-brand, 'Roboto', sans-serif);
+  font-size: 3.5625rem; // M3 Display Large size
+  font-weight: 400;
+  line-height: 4rem;
+  letter-spacing: -0.015625em;
+  margin-bottom: 0.5em;
+}
+h2 {
+  font-family: var(--md-ref-typeface-brand, 'Roboto', sans-serif);
+  font-size: 2.8125rem; // M3 Display Medium size
+  font-weight: 400;
+  line-height: 3.25rem;
+  margin-bottom: 0.5em;
+}
+h3 {
+  font-family: var(--md-ref-typeface-brand, 'Roboto', sans-serif);
+  font-size: 2.25rem;   // M3 Display Small size
+  font-weight: 400;
+  line-height: 2.75rem;
+  margin-bottom: 0.5em;
+}
+h4 {
+  font-family: var(--md-ref-typeface-brand, 'Roboto', sans-serif);
+  font-size: 2rem;      // M3 Headline Large size
+  font-weight: 400;
+  line-height: 2.5rem;
+  margin-bottom: 0.4em;
+}
+h5 {
+  font-family: var(--md-ref-typeface-brand, 'Roboto', sans-serif);
+  font-size: 1.75rem;   // M3 Headline Medium size
+  font-weight: 400; // M3 often uses 500 for titles, but headline medium is 400
+  line-height: 2.25rem;
+  margin-bottom: 0.4em;
+}
+h6 {
+  font-family: var(--md-ref-typeface-brand, 'Roboto', sans-serif);
+  font-size: 1.5rem;    // M3 Headline Small size
+  font-weight: 400;
+  line-height: 2rem;
+  margin-bottom: 0.4em;
+}
+
+p {
+  font-family: var(--md-ref-typeface-plain, 'Roboto', sans-serif);
+  font-size: 1rem;      // M3 Body Large size
+  font-weight: 400;
+  line-height: 1.5rem;
+  letter-spacing: 0.03125em;
+  margin-bottom: 1rem;
+}
+
+small {
+  font-family: var(--md-ref-typeface-plain, 'Roboto', sans-serif);
+  font-size: 0.75rem;   // M3 Body Small size
+  font-weight: 400;
+  line-height: 1rem;
+  letter-spacing: 0.03333333em;
+}
+
+strong, b {
+  font-weight: 500; // M3 often uses Medium (500) for emphasis. Adjust if a bolder weight is standard.
+}
+
+a {
+  color: var(--md-sys-color-primary);
+  text-decoration: none;
+  &:hover,
+  &:focus {
+    text-decoration: underline;
+    color: var(--md-sys-color-on-primary-container); // Or a different hover state color
+  }
+}
+
+ul, ol {
+  font-family: var(--md-ref-typeface-plain, 'Roboto', sans-serif);
+  font-size: 1rem; // M3 Body Large
+  line-height: 1.5rem;
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+li {
+  margin-bottom: 0.5rem;
+}
+
+blockquote {
+  font-family: var(--md-ref-typeface-plain, 'Roboto', sans-serif);
+  font-size: 1rem; // M3 Body Large
+  border-left: 4px solid var(--md-sys-color-outline-variant);
+  padding: 0.5rem 1rem; // Add some vertical padding too
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 1rem;
+  font-style: italic;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+hr {
+  border: 0;
+  height: 1px; // Use height for hr
+  background-color: var(--md-sys-color-outline-variant);
+  margin: 2rem 0;
+}
+
+// Basic responsive container - useful for non-StyleXJS controlled content areas
 .container {
-  width: 90%;
+  width: 100%;
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
+  padding-left: 1rem;  // Consistent padding
+  padding-right: 1rem; // Consistent padding
 }
-
-// Typography classes (md-typescale-* classes are applied by MWC typography styles)
-// You can add your own global typography styles or utilities here if needed.
-h1, .md-typescale-display-large { /* ... */ }
-h2, .md-typescale-display-medium { /* ... */ }
-// etc.
 
 // WordPress Core Styles Adjustments (if needed for M3 compatibility)
 // e.g., .alignwide, .alignfull, blockquote, etc.

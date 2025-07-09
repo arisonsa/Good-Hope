@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2020", // Or newer, depending on browser support targets
+    "module": "ESNext", // For dynamic imports and modern module syntax
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "declaration": true, // Generates .d.ts files (optional)
+    "declarationMap": true, // (optional)
+    "sourceMap": true, // For debugging
+    "outDir": "./dist/tsc/", // Or wherever your build process expects intermediate files, if any
+    "rootDir": "./resources/scripts/", // Or your main TS source directory
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node", // or "bundler" with TS 5+
+    "resolveJsonModule": true,
+    "isolatedModules": true, // Good practice with Babel
+    "experimentalDecorators": true, // Required for LitElement decorators like @customElement, @property
+    "useDefineForClassFields": false, // Lit recommends this for compatibility with older decorators
+    "noEmit": true, // Let Babel/Bundler handle emit; TS is for type checking
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": ["resources/scripts/components/*"],
+      "@tokens/*": ["resources/scripts/tokens/*"],
+      "@utils/*": ["resources/scripts/utils/*"]
+      // Add other aliases as needed
+    }
+  },
+  "include": [
+    "resources/scripts/**/*.ts",
+    "resources/scripts/**/*.tsx" // If using TSX
+    // Add paths to other TS files if any (e.g., block editor scripts if in TS)
+  ],
+  "exclude": [
+    "node_modules",
+    "dist", // Or your Mix output directory ('public')
+    "vendor"
+  ]
+}

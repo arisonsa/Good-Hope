@@ -49,21 +49,28 @@ class NewsletterSignupBlock
         $emailPlaceholder = $attributes['emailPlaceholder'] ?? __('Enter your email', 'charity-m3');
         $buttonText = $attributes['buttonText'] ?? __('Subscribe', 'charity-m3');
         $textAlign = $attributes['textAlign'] ?? 'left';
-        $backgroundColor = $attributes['backgroundColor'] ?? '';
-        $textColor = $attributes['textColor'] ?? '';
-        $formId = 'charity-m3-newsletter-form-' . uniqid(); // Unique ID for the form and messages
+        $backgroundColor = $attributes['backgroundColor'] ?? ''; // CSS color value or var()
+        $textColor = $attributes['textColor'] ?? '';           // CSS color value or var()
+        $formId = 'charity-m3-newsletter-form-' . ($this->app->isProduction() ? md5(serialize($attributes)) : uniqid());
 
-        $submission_message = '';
-        $message_type = ''; // 'success' or 'error'
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'charity_m3_subscribe' && isset($_POST['_wpnonce']) && wp_verify_nonce(sanitize_key($_POST['_wpnonce']), 'charity_m3_subscribe_nonce')) {
+        $submission_message_text = '';
+        $submission_message_type = ''; // 'success', 'error', 'info'
+
+        // Handle form submission (this logic remains in PHP)
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
+            isset($_POST['action']) && $_POST['action'] === 'charity_m3_subscribe' &&
+            isset($_POST['_wpnonce_newsletter_signup_block']) &&
+            wp_verify_nonce(sanitize_key($_POST['_wpnonce_newsletter_signup_block']), 'charity_m3_subscribe_nonce_block_' . $attributes['blockId'] ?? '')) { // Use a more specific nonce if blockId is available
 
             $email = isset($_POST['newsletter_email']) ? sanitize_email(wp_unslash($_POST['newsletter_email'])) : '';
-            $name = isset($_POST['newsletter_name']) ? sanitize_text_field(wp_unslash($_POST['newsletter_name'])) : null; // Optional name field
+            $name = (isset($attributes['showNameField']) && $attributes['showNameField'] && isset($_POST['newsletter_name']))
+                    ? sanitize_text_field(wp_unslash($_POST['newsletter_name']))
+                    : null;
 
             if (!is_email($email)) {
-                $submission_message = __('Invalid email address provided.', 'charity-m3');
-                $message_type = 'error';
+                $submission_message_text = __('Invalid email address provided.', 'charity-m3');
+                $submission_message_type = 'error';
             } else {
                 /** @var \App\Services\SubscriberService $subscriberService */
                 $subscriberService = $this->app->make(\App\Services\SubscriberService::class);
@@ -76,77 +83,80 @@ class NewsletterSignupBlock
                 $result = $subscriberService->addSubscriber($email, $subscriber_data);
 
                 if ($result) {
-                    $submission_message = __('Thank you for subscribing!', 'charity-m3');
-                    $message_type = 'success';
-                    // TODO: Send opt-in confirmation email if status is 'pending'
+                    $submission_message_text = __('Thank you for subscribing!', 'charity-m3');
+                    $submission_message_type = 'success';
                 } else {
-                    // Check if email already exists and is subscribed
                     $existing_subscriber = $subscriberService->getSubscriberByEmail($email);
                     if ($existing_subscriber && $existing_subscriber->status === 'subscribed') {
-                        $submission_message = __('You are already subscribed.', 'charity-m3');
-                        $message_type = 'info'; // Or success, depending on desired UX
+                        $submission_message_text = __('You are already subscribed.', 'charity-m3');
+                        $submission_message_type = 'info';
                     } else {
-                        $submission_message = __('Could not process your subscription. Please try again.', 'charity-m3');
-                        $message_type = 'error';
+                        $submission_message_text = __('Could not process your subscription. Please try again.', 'charity-m3');
+                        $submission_message_type = 'error';
                     }
                 }
             }
         }
 
-
         $wrapper_attributes = get_block_wrapper_attributes([
-            'style' => 'text-align:' . esc_attr($textAlign) . ';' .
-                       ($backgroundColor ? 'background-color:' . esc_attr($backgroundColor) . ';' : '') .
-                       ($textColor ? 'color:' . esc_attr($textColor) . ';' : ''),
+            'style' => trim(
+                ($textAlign ? 'text-align:' . esc_attr($textAlign) . ';' : '') .
+                ($backgroundColor ? 'background-color:' . esc_attr($backgroundColor) . ';' : '') .
+                ($textColor ? 'color:' . esc_attr($textColor) . ';' : '')
+            ),
             'class' => 'charity-m3-newsletter-signup-block align' . ($attributes['align'] ?? '')
         ]);
+
+        // Prepare attributes for the Web Component
+        $wc_attrs = [
+            'email-placeholder' => esc_attr($emailPlaceholder),
+            'button-text' => esc_attr($buttonText),
+            'form-action' => esc_url(add_query_arg(null, null)), // Post to current page
+            'nonce-value' => wp_create_nonce('charity_m3_subscribe_nonce_block_' . $attributes['blockId'] ?? ''),
+            'nonce-name' => '_wpnonce_newsletter_signup_block', // Ensure this matches the check
+            'form-id' => esc_attr($formId),
+        ];
+        if (isset($attributes['showNameField']) && $attributes['showNameField']) {
+            $wc_attrs['show-name-field'] = ''; // Boolean attribute
+            $wc_attrs['name-placeholder'] = esc_attr($attributes['namePlaceholder'] ?? __('Your Name', 'charity-m3'));
+        }
+        if ($submission_message_text) {
+            $wc_attrs['submission-message'] = esc_attr($submission_message_text);
+            $wc_attrs['message-type'] = esc_attr($submission_message_type);
+        }
+
+        $wc_attrs_string = '';
+        foreach ($wc_attrs as $key => $value) {
+            // For boolean attributes, only include the key if true.
+            if (is_bool($value) && $value === true) { // This logic needs to be in Lit component for boolean props from attributes
+                 $wc_attrs_string .= $key . ' '; // Lit handles boolean attributes by presence
+            } elseif (!is_bool($value)) {
+                 $wc_attrs_string .= $key . '="' . $value . '" ';
+            }
+        }
+        // A better way for boolean attributes if Lit component expects presence:
+        if (isset($attributes['showNameField']) && $attributes['showNameField']) {
+             $wc_attrs_string .= 'show-name-field ';
+        }
+
 
         ob_start();
         ?>
         <div <?php echo $wrapper_attributes; ?>>
             <?php if (!empty($title)): ?>
-                <h3 class="md-typescale-headline-small" style="<?php echo $textColor ? 'color:' . esc_attr($textColor) . ';' : ''; ?>">
+                <h3 class="block-title" style="<?php echo $textColor ? 'color:' . esc_attr($textColor) . ';' : ''; ?>">
                     <?php echo esc_html($title); ?>
                 </h3>
             <?php endif; ?>
             <?php if (!empty($description)): ?>
-                <p class="md-typescale-body-medium" style="<?php echo $textColor ? 'color:' . esc_attr($textColor) . ';' : ''; ?>">
+                <p class="block-description" style="<?php echo $textColor ? 'color:' . esc_attr($textColor) . ';' : ''; ?>">
                     <?php echo esc_html($description); ?>
                 </p>
             <?php endif; ?>
 
-            <?php if (!empty($submission_message)): ?>
-                <div class="newsletter-submission-message type-<?php echo esc_attr($message_type); ?>" style="margin-bottom: 16px; padding: 10px; border: 1px solid <?php echo $message_type === 'error' ? 'red' : 'green'; ?>;">
-                    <?php echo esc_html($submission_message); ?>
-                </div>
-            <?php endif; ?>
-
-            <form class="newsletter-form" id="<?php echo esc_attr($formId); ?>" method="post" action="<?php echo esc_url(add_query_arg(null, null)); // Post to current page ?>">
-                <input type="hidden" name="action" value="charity_m3_subscribe">
-                <?php wp_nonce_field('charity_m3_subscribe_nonce'); ?>
-
-                <?php // Optional: Add a name field, controlled by an attribute in block.json if desired ?>
-                <?php if (isset($attributes['showNameField']) && $attributes['showNameField']): ?>
-                <md-outlined-text-field
-                    label="<?php echo esc_attr($attributes['namePlaceholder'] ?? __('Your Name', 'charity-m3')); ?>"
-                    type="text"
-                    name="newsletter_name"
-                    style="margin-bottom: 16px; width: 100%; max-width: 400px;"
-                ></md-outlined-text-field>
-                <?php endif; ?>
-
-                <md-outlined-text-field
-                    label="<?php echo esc_attr($emailPlaceholder); ?>"
-                    type="email"
-                    name="newsletter_email"
-                    required
-                    value="" <?php // Clear value on successful submission if page reloads ?>
-                    style="margin-bottom: 16px; width: 100%; max-width: 400px;"
-                ></md-outlined-text-field>
-                <md-filled-button type="submit">
-                    <?php echo esc_html($buttonText); ?>
-                </md-filled-button>
-            </form>
+            <newsletter-signup-form <?php echo trim($wc_attrs_string); ?>>
+                {{-- Any slotted content for the web component could go here if designed for it --}}
+            </newsletter-signup-form>
         </div>
         <?php
         return ob_get_clean();

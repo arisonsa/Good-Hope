@@ -3,7 +3,8 @@
 namespace App\Providers;
 
 use Roots\Acorn\ServiceProvider;
-use App\View\Composers\AppComposer; // We'll create this next
+use App\View\Composers\AppComposer;
+use App\Theme\CustomizerManager; // Add this
 
 class ThemeServiceProvider extends ServiceProvider
 {
@@ -51,6 +52,11 @@ class ThemeServiceProvider extends ServiceProvider
 
         // Add Google Fonts for Material Symbols and Roboto
         add_action('wp_head', [$this, 'addGoogleFonts']);
+
+        // Initialize Customizer settings
+        if (is_customize_preview() || is_admin()) { // Or just on 'customize_register' hook
+            new CustomizerManager();
+        }
     }
 
     /**
@@ -79,6 +85,14 @@ class ThemeServiceProvider extends ServiceProvider
         add_theme_support('wp-block-styles'); // For Gutenberg block styles
         add_theme_support('align-wide'); // For wide and full-width Gutenberg blocks
         add_theme_support('responsive-embeds');
+        add_theme_support('custom-logo', [ // Add custom logo support
+            // Optional: define height and width.
+            // 'height'      => 100,
+            // 'width'       => 400,
+            'flex-height' => true,
+            'flex-width'  => true,
+            // 'header-text' => ['site-title', 'site-description'], // Classes to hide if logo is set
+        ]);
         // Add other supports as needed
     }
 

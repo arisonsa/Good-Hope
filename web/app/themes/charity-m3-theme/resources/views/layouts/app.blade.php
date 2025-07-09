@@ -4,14 +4,15 @@
   <meta charset="{{ get_bloginfo('charset') }}">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   @php(wp_head())
+  @stack('page-styles')
 </head>
-<body>
+<body @php(body_class())>
   @php(wp_body_open())
 
   <div id="app" class="flex flex-col min-h-screen">
-    @include('partials.header')
+    @include('partials.header') {{-- Consider making header/footer more configurable via props or slots for landing pages --}}
 
-    <main id="main" class="main py-8 flex-grow">
+    <main id="main" class="main @yield('main-class', 'py-8') flex-grow"> {{-- Allow overriding main class --}}
       @yield('content')
     </main>
 
@@ -19,5 +20,6 @@
   </div>
 
   @php(wp_footer())
+  @stack('page-scripts')
 </body>
 </html>
