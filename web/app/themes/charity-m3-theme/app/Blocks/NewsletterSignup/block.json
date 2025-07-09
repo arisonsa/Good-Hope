@@ -1,0 +1,70 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "charity-m3/newsletter-signup",
+  "title": "M3 Newsletter Signup",
+  "category": "charity-m3-blocks",
+  "description": "A Material Design 3 styled newsletter signup form.",
+  "keywords": ["newsletter", "signup", "subscribe", "email", "material", "m3"],
+  "icon": "email-alt",
+  "textdomain": "charity-m3",
+  "attributes": {
+    "title": {
+      "type": "string",
+      "source": "html",
+      "selector": "h3",
+      "default": "Stay Updated"
+    },
+    "description": {
+      "type": "string",
+      "source": "html",
+      "selector": "p",
+      "default": "Subscribe to our newsletter for the latest news and updates."
+    },
+    "emailPlaceholder": {
+      "type": "string",
+      "default": "Enter your email"
+    },
+    "buttonText": {
+      "type": "string",
+      "default": "Subscribe"
+    },
+    "showNameField": {
+      "type": "boolean",
+      "default": false
+    },
+    "namePlaceholder": {
+      "type": "string",
+      "default": "Your Name"
+    },
+    "textAlign": {
+      "type": "string",
+      "default": "left"
+    },
+    "align": {
+      "type": "string",
+      "default": ""
+    },
+    "backgroundColor": {
+        "type": "string"
+    },
+    "textColor": {
+        "type": "string"
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"],
+    "color": {
+      "background": true,
+      "text": true,
+      "link": false,
+      "gradients": false
+    },
+    "spacing": {
+        "padding": true,
+        "margin": true
+    }
+  },
+  "editorScript": "file:./newsletter-signup.editor.js"
+}

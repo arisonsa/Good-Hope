@@ -1,0 +1,22 @@
+{
+  "name": "roots/charity-m3-theme",
+  "description": "Charity and NGO focused theme with Material Design 3, Bedrock, and Acorn.",
+  "type": "wordpress-theme",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Jules AI",
+      "homepage": "https://example.com"
+    }
+  ],
+  "require": {
+    "php": "^8.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
