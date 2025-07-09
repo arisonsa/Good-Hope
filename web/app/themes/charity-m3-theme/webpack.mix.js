@@ -20,59 +20,69 @@ mix.setPublicPath('public'); // Output to theme_root/public/
 // Set resource root for easier pathing
 mix.setResourceRoot('../'); // Relative to public path, so it points to theme_root/
 
-mix.js('resources/scripts/main.js', 'scripts') // Output: public/scripts/main.js
-   .js('app/Blocks/NewsletterSignup/newsletter-signup.editor.js', 'scripts/blocks') // Block specific JS
-   .sass('resources/styles/main.scss', 'styles') // Output: public/styles/main.css
-   // If you don't use SASS, and prefer plain CSS or PostCSS:
-   // .postCss('resources/styles/main.css', 'styles', [
-   //   require('postcss-import'),
-   //   require('tailwindcss'), // if you were to use Tailwind
-   //   require('autoprefixer'),
-   // ])
-   .sourceMaps(true, 'source-map') // Enable source maps for development
-   .version(); // Enable versioning for cache busting in production
+// Main JavaScript/TypeScript entry point (will import Lit components, StyleXJS styles etc.)
+mix.ts('resources/scripts/main.ts', 'public/scripts') // Changed to .ts
+   // Example for Gutenberg block editor scripts if they remain separate JS
+   .js('app/Blocks/NewsletterSignup/newsletter-signup.editor.js', 'public/scripts/blocks')
+   .sass('resources/styles/main.scss', 'public/styles/main.css') // For global M3 tokens & minimal base styles
+   .options({
+       postCss: [
+           // Remove Tailwind, keep Autoprefixer if needed for global styles
+           require('autoprefixer'),
+       ],
+       // Ensure ts-loader is used for .ts files if not default with mix.ts()
+       // processCssUrls: true, // Already in global options
+   })
+   .babelConfig({ // Point to our babel.config.js
+        configFile: path.resolve(__dirname, 'babel.config.js'),
+   })
+   .sourceMaps(true, 'source-map')
+   .version();
 
-// Alias for @material/web if necessary, though Webpack should resolve it from project root node_modules.
-// If issues arise, you might need to configure Webpack further.
-// mix.alias({
-//     '@material/web': path.join(__dirname, '../../../../node_modules/@material/web'),
-// });
-
-// Configure Webpack to resolve modules from project root node_modules
-// This helps ensure that @material/web (installed in project root) is found.
+// Configure Webpack for StyleXJS and TypeScript
 mix.webpackConfig({
   resolve: {
+    extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'], // Ensure .ts and .tsx are resolved
     modules: [
       path.resolve(__dirname, '../../../../node_modules'), // Project root node_modules
-      'node_modules' // Theme's own node_modules
+      path.resolve(__dirname, 'node_modules'), // Theme's own node_modules
     ],
-    // If using Lit (which MWC does), you might need this for deduplication or specific handling.
-    // dedupe: ['lit', 'lit-html', '@lit/reactive-element'],
+    // alias: { // Optional: if you need aliases for tokens or components
+    //   '@tokens': path.resolve(__dirname, 'resources/scripts/tokens'),
+    //   '@components': path.resolve(__dirname, 'resources/scripts/components'),
+    // }
   },
-  // MWC components are distributed as JS modules.
-  // Some components might need specific loaders if there are issues,
-  // but Mix should handle standard JS/TS well.
   module: {
     rules: [
-      // Add any specific loaders here if needed
-      // For example, if MWC components had CSS inside JS that needed extraction
+      // TypeScript loader (Mix's default for .ts() should handle this, but explicit for clarity)
+      // {
+      //   test: /\.tsx?$/,
+      //   loader: 'ts-loader',
+      //   exclude: /node_modules/,
+      //   options: {
+      //     // appendTsSuffixTo: [/\.vue$/], // Example if using Vue with TS
+      //   }
+      // },
+      // Babel loader for JS/TS files (to process StyleXJS plugin, etc.)
+      // Mix applies Babel to JS/TS output by default. Ensure it uses our babel.config.js.
+      // The .babelConfig() call above should ensure this.
+
+      // CSS loader for .stylex.css files (if StyleXJS outputs them separately and they are imported in JS/TS)
+      // This setup assumes StyleXJS generated CSS is imported in JS/TS and handled by standard CSS processing.
+      // If StyleXJS babel plugin is configured to output a single main CSS file, ensure that file
+      // is either imported by main.scss or included as another entry point for Mix.
+      // For now, we assume component-level CSS imports.
     ]
   }
 });
 
 // Copy images and fonts
 mix.copyDirectory('resources/images', 'public/images');
-mix.copyDirectory('resources/fonts', 'public/fonts'); // If you have theme-specific fonts
+mix.copyDirectory('resources/fonts', 'public/fonts');
 
-// Options for Mix
+// Global Mix options
 mix.options({
-  processCssUrls: true, // Process/optimize relative URLs in CSS
-  // terser: { // Terser options for JS minification
-  //   extractComments: false, // Don't extract comments to a separate file
-  // },
-  // postCss: [ // Global PostCSS plugins
-  //   require('autoprefixer'),
-  // ],
+  processCssUrls: true,
 });
 
 // If you want to use BrowserSync
