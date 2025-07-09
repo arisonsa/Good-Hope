@@ -4,11 +4,10 @@ import * as stylex from '@stylexjs/stylex';
 import { M3SysColors, M3TypeScale, M3SysShape } from '../tokens'; // Adjusted path if necessary
 
 // Import MWC button if we want to use it directly for actions, or build custom with StyleXJS
-// For this example, let's assume we might use MWC button for simplicity of its built-in features.
-// If not, button styling would also be done with StyleXJS.
-import '@material/web/button/filled-button.js';
-import '@material/web/button/outlined-button.js';
-import '@material/web/icon/icon.js'; // If buttons have icons
+// No longer directly import MWC buttons if charity-button replaces them fully for this component.
+// Keep MWC icon if charity-button uses <md-icon> internally, or remove if charity-button handles icons itself.
+// For now, assume charity-button might use <md-icon> or has its own icon solution.
+import '@material/web/icon/icon.js'; // Keep if <md-icon> is used by <charity-button> or directly
 
 // Define styles using StyleXJS
 const heroStyles = stylex.create({
@@ -216,21 +215,17 @@ export class CharityHero extends LitElement {
 
           ${this.buttons.length > 0 ? html`
             <div ${stylex.props(heroStyles.buttonsWrapper, buttonJustifyStyle)}>
-              ${this.buttons.map(button => {
-                const buttonTag = button.type === 'filled' ? html`md-filled-button` :
-                                  button.type === 'outlined' ? html`md-outlined-button` :
-                                  // Add other MWC button types if needed (text, elevated, tonal)
-                                  html`md-filled-button`; // Default
-                return html`
-                  <${buttonTag}
-                    href=${button.href}
-                    target=${button.target || ''}
-                    rel=${button.rel || ''}
-                  >
-                    ${button.icon ? html`<md-icon slot="icon">${button.icon}</md-icon>` : ''}
-                    ${button.text}
-                  </${buttonTag}>`;
-              })}
+              ${this.buttons.map(button => html`
+                <charity-button
+                  variant=${button.type || 'filled'}
+                  href=${button.href}
+                  target=${button.target || nothing}
+                  rel=${button.rel || nothing}
+                  icon=${button.icon || nothing}
+                >
+                  ${button.text}
+                </charity-button>
+              `)}
             </div>
           ` : ''}
           <slot></slot> {{-- For additional content --}}

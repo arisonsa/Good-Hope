@@ -20,47 +20,13 @@ class Grid extends Component
      */
     public function __construct(
         string $cols = '1 md:grid-cols-2 lg:grid-cols-3', // Default responsive columns
-        string $gap = '6', // Default gap
+        string $gap = '6', // Default gap, matches Lit component default
         ?string $tag = 'div'
     ) {
-        $this->cols = $this->parseCols($cols);
-        $this->gap = $this->parseGap($gap);
-        $this->tag = $tag ?: 'div';
-    }
-
-    private function parseCols(string $colsInput): string
-    {
-        // If it contains 'grid-cols-', assume it's a full Tailwind class string
-        if (str_contains($colsInput, 'grid-cols-')) {
-            return $colsInput;
-        }
-        // Otherwise, treat as simple number for default responsive behavior
-        // This can be expanded to generate more complex responsive classes based on a number
-        switch ($colsInput) {
-            case '1':
-                return 'grid-cols-1';
-            case '2':
-                return 'grid-cols-1 md:grid-cols-2';
-            case '3':
-                return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
-            case '4':
-                return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
-            default: // Fallback to input if it's not a simple number or recognized pattern
-                return $colsInput;
-        }
-    }
-
-    private function parseGap(string $gapInput): string
-    {
-        // If it contains 'gap-', assume it's a full Tailwind class string
-        if (str_contains($gapInput, 'gap-')) {
-            return $gapInput;
-        }
-        // Otherwise, treat as simple number for Tailwind spacing scale
-        if (is_numeric($gapInput)) {
-            return "gap-{$gapInput}";
-        }
-        return "gap-6"; // Default fallback
+        // Pass values directly; Lit component will handle defaults and parsing
+        $this->cols = $cols;
+        $this->gap = $gap;
+        $this->tag = $tag ?: 'div'; // Ensure tag has a default
     }
 
     /**

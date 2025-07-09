@@ -12,10 +12,12 @@ class CtaBanner extends Component
     public array $buttons;
     public ?string $backgroundImage;
     public string $backgroundColor;
-    public string $textColor;
+    public ?string $textColor; // Nullable, Lit component has defaults
     public string $textAlignment;
     public string $contentWidth;
-    public string $padding; // e.g. 'py-12', 'py-16 md:py-24'
+    public string $padding;
+    public bool $showOverlay;
+
 
     /**
      * Create a new component instance.
@@ -27,47 +29,24 @@ class CtaBanner extends Component
         ?string $text = null,
         array $buttons = [],
         ?string $backgroundImage = null,
-        string $backgroundColor = 'bg-primary-container', // M3 default
-        ?string $textColor = null,
-        string $textAlignment = 'text-center',
-        string $contentWidth = 'container', // 'container', 'narrow', 'wide', 'full'
-        string $padding = 'py-12 md:py-20'
+        ?string $backgroundColor = null, // Let Lit component default
+        ?string $textColor = null,       // Let Lit component default
+        string $textAlignment = 'center',
+        string $contentWidth = 'container',
+        string $padding = '3rem 0', // Default matching Lit component's expectation for direct style
+        bool $showOverlay = true // Default matching Lit component
     ) {
         $this->title = $title;
         $this->text = $text;
         $this->buttons = $buttons;
         $this->backgroundImage = $backgroundImage;
-        $this->backgroundColor = $backgroundColor;
+        $this->backgroundColor = $backgroundColor; // Pass through
+        $this->textColor = $textColor;             // Pass through
         $this->textAlignment = $textAlignment;
-        $this->contentWidth = $this->getContentWidthClass($contentWidth);
-        $this->padding = $padding;
-        $this->textColor = $textColor ?? $this->getDefaultTextColor($backgroundColor);
-    }
-
-    protected function getContentWidthClass(string $widthAlias): string
-    {
-        // Consistent with Hero component
-        switch ($widthAlias) {
-            case 'container': return 'container mx-auto px-4';
-            case 'narrow': return 'max-w-3xl mx-auto px-4';
-            case 'wide': return 'max-w-7xl mx-auto px-4';
-            case 'full': return 'w-full px-4';
-            case 'edge-to-edge': return 'w-full';
-            default: return $widthAlias;
-        }
-    }
-
-    protected function getDefaultTextColor(string $bgColor): string
-    {
-        // Consistent with Hero component
-        $colorName = Str::of($bgColor)->remove('bg-');
-        if (Str::endsWith($colorName, ['-container', '-variant', '-fixed'])) {
-             return "text-on-{$colorName}";
-        }
-        if (Str::contains($colorName, ['primary', 'secondary', 'tertiary', 'error', 'surface', 'background'])) {
-            return "text-on-{$colorName}";
-        }
-        return 'text-black dark:text-white';
+        $this->contentWidth = $contentWidth;       // Pass through alias
+        $this->padding = $padding;                 // Pass through CSS value
+        $this->showOverlay = $showOverlay;
+        // No complex class/color calculations needed here anymore
     }
 
     /**
