@@ -44,14 +44,6 @@ class NewsletterServiceProvider extends ServiceProvider
         // Register Custom Post Type for Newsletter Campaigns
         $this->registerNewsletterCampaignCPT();
 
-        // Initialize Admin Pages
-        if (is_admin()) {
-            $subscriberService = $this->app->make(SubscriberService::class);
-            $campaignService = $this->app->make(CampaignService::class);
-            $trackingService = $this->app->make(TrackingService::class);
-            new AdminManager($subscriberService, $campaignService, $trackingService);
-        }
-
         // Register REST API endpoints for tracking
         add_action('rest_api_init', [$this, 'registerTrackingRoutes']);
 

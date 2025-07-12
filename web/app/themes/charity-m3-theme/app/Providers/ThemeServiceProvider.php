@@ -54,9 +54,33 @@ class ThemeServiceProvider extends ServiceProvider
         add_action('wp_head', [$this, 'addGoogleFonts']);
 
         // Initialize Customizer settings
-        if (is_customize_preview() || is_admin()) { // Or just on 'customize_register' hook
+        if (is_customize_preview() || is_admin()) {
             new CustomizerManager();
         }
+
+        // Initialize Admin Pages
+        if (is_admin()) {
+            $this->bootAdminManager();
+        }
+    }
+
+    /**
+     * Instantiate the AdminManager with all necessary services.
+     */
+    protected function bootAdminManager()
+    {
+        // Use the app container to resolve singleton services
+        $subscriberService = $this->app->make(\App\Services\SubscriberService::class);
+        $campaignService   = $this->app->make(\App\Services\CampaignService::class);
+        $trackingService   = $this->app->make(\App\Services\TrackingService::class);
+        $donationService   = $this->app->make(\App\Services\DonationService::class);
+
+        new \App\Admin\AdminManager(
+            $subscriberService,
+            $campaignService,
+            $trackingService,
+            $donationService
+        );
     }
 
     /**
@@ -142,6 +166,20 @@ class ThemeServiceProvider extends ServiceProvider
         if (is_singular() && comments_open() && get_option('thread_comments')) {
             wp_enqueue_script('comment-reply');
         }
+
+        // Localize script with data needed by frontend components
+        // The handle 'charity-m3-main' must match the one used in wp_enqueue_script
+        wp_localize_script('charity-m3-main', 'charityM3', [
+            'stripePublicKey' => getenv('STRIPE_PUBLISHABLE_KEY') ?: '',
+            // Add other global data if needed
+        ]);
+
+        // wp_localize_script for wpApiSettings is usually handled by WordPress core
+        // when a script is enqueued with 'wp-api-fetch' as a dependency, but let's ensure it's there.
+        // If not, we could add it manually, but it's better to rely on WP's handling.
+        // Our REST API endpoint uses permission_callback and nonce checks, so 'wp-api-fetch' should be a dependency
+        // for any script making such calls, or the nonce needs to be passed.
+        // The Lit component currently assumes `window.wpApiSettings.nonce` exists.
     }
 
     // Placeholder for CPTs and Taxonomies

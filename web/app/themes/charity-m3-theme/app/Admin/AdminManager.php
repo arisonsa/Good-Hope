@@ -2,25 +2,30 @@
 
 namespace App\Admin;
 
-use App\Services\SubscriberService; // To inject if needed for page handlers
+use App\Services\SubscriberService;
+use App\Services\CampaignService;
+use App\Services\TrackingService;
+use App\Services\DonationService;
+use App\Admin\DonationsListTable;
+use App\Admin\SubscribersListTable; // Make sure this is also included
 
 class AdminManager
 {
     private SubscriberService $subscriberService;
-
-    // We can inject services if page handlers need them directly,
-    // or access them via app('App\Services\ServiceName') within handlers.
-    private \App\Services\CampaignService $campaignService;
-    private \App\Services\TrackingService $trackingService;
+    private CampaignService $campaignService;
+    private TrackingService $trackingService;
+    private DonationService $donationService;
 
     public function __construct(
         SubscriberService $subscriberService,
-        \App\Services\CampaignService $campaignService, // Injected
-        \App\Services\TrackingService $trackingService  // Injected
+        CampaignService $campaignService,
+        TrackingService $trackingService,
+        DonationService $donationService
     ) {
         $this->subscriberService = $subscriberService;
         $this->campaignService = $campaignService;
         $this->trackingService = $trackingService;
+        $this->donationService = $donationService;
 
         add_action('admin_menu', [$this, 'registerAdminPages']);
         add_action('wp_dashboard_setup', [$this, 'addDashboardWidgets']);
@@ -134,6 +139,16 @@ class AdminManager
             'manage_options',                         // Capability (adjust as needed, e.g., a custom capability)
             'charity-m3-subscribers',                 // Menu slug
             [$this, 'renderSubscribersPage']          // Callback function to render the page
+        );
+
+        // Add Donations submenu page
+        add_submenu_page(
+            'edit.php?post_type=newsletter_campaign', // Parent slug (main CPT page)
+            __('Donations', 'charity-m3'),            // Page title
+            __('Donations', 'charity-m3'),            // Menu title
+            'manage_options',                         // Capability
+            'charity-m3-donations',                   // Menu slug
+            [$this, 'renderDonationsPage']            // Callback
         );
 
         // Example: Add New Subscriber (not directly in menu, but linked from Subscribers page)
@@ -343,6 +358,26 @@ class AdminManager
     public function renderAnalyticsPage()
     {
         echo '<div class="wrap"><h1>' . esc_html__('Newsletter Analytics', 'charity-m3') . '</h1><p>Coming soon...</p></div>';
+    }
+
+    public function renderDonationsPage()
+    {
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__('Donations', 'charity-m3') . '</h1>';
+
+        $donationsListTable = new DonationsListTable($this->donationService);
+        $donationsListTable->prepare_items();
+
+        // Search box for donations
+        echo '<form method="get">';
+        echo '<input type="hidden" name="page" value="charity-m3-donations" />';
+        $donationsListTable->search_box(__('Search Donations', 'charity-m3'), 'donation-search-input');
+        echo '</form>';
+
+        // Display the table
+        $donationsListTable->display();
+
+        echo '</div>';
     }
 
     public function renderSettingsPage()

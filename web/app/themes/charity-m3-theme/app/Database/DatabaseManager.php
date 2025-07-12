@@ -15,7 +15,38 @@ class DatabaseManager
 
         self::createSubscribersTable($wpdb);
         self::createNewsletterTrackingTable($wpdb);
+        self::createDonationsTable($wpdb); // Add this call
         // CPT registration will handle the 'newsletter_campaigns' effective table (wp_posts, wp_postmeta)
+    }
+
+    /**
+     * Create the donations table.
+     */
+    private static function createDonationsTable(\wpdb $wpdb)
+    {
+        $table_name = $wpdb->prefix . 'charity_m3_donations';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            donor_name VARCHAR(255) NULL,
+            donor_email VARCHAR(255) NOT NULL,
+            amount INT UNSIGNED NOT NULL,
+            currency VARCHAR(10) NOT NULL,
+            frequency VARCHAR(50) NOT NULL,
+            status VARCHAR(50) NOT NULL,
+            gateway VARCHAR(50) NOT NULL,
+            gateway_transaction_id VARCHAR(255) NOT NULL,
+            campaign_id BIGINT UNSIGNED NULL,
+            donated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            UNIQUE KEY gateway_transaction_id (gateway_transaction_id),
+            KEY donor_email (donor_email),
+            KEY status (status),
+            KEY campaign_id (campaign_id)
+        ) $charset_collate;";
+
+        dbDelta($sql);
     }
 
     /**

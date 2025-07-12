@@ -49,7 +49,8 @@ if (! class_exists(\Roots\Acorn\Application::class)) {
                 ->withProviders([
                     \App\Providers\ThemeServiceProvider::class,
                     \App\Providers\NewsletterServiceProvider::class,
-                    \App\Providers\BlocksServiceProvider::class, // Add this line
+                    \App\Providers\BlocksServiceProvider::class,
+                    \App\Providers\DonationServiceProvider::class, // Add this line
                 ])
                 ->boot();
         } catch (\Exception $e) {
