@@ -25,8 +25,9 @@ mix.ts('resources/scripts/main.ts', 'public/scripts') // Output: public/scripts/
    // Gutenberg block editor scripts
    .js('app/Blocks/NewsletterSignup/newsletter-signup.editor.js', 'public/scripts/blocks/newsletter-signup-editor.js')
    .js('app/Blocks/FeaturedCallout/edit.js', 'public/scripts/blocks/featured-callout-editor.js')
-   .js('app/Blocks/CardGrid/edit.js', 'public/scripts/blocks/card-grid-editor.js') // New: CardGrid editor script
-   .js('app/Blocks/CardItem/edit.js', 'public/scripts/blocks/card-item-editor.js') // New: CardItem editor script
+   .js('app/Blocks/CardGrid/edit.js', 'public/scripts/blocks/card-grid-editor.js')
+   .js('app/Blocks/CardItem/edit.js', 'public/scripts/blocks/card-item-editor.js')
+   .js('app/Blocks/DonationForm/edit.js', 'public/scripts/blocks/donation-form-editor.js') // New: Donation Form editor script
    .sass('resources/styles/main.scss', 'public/styles/main.css') // For global M3 tokens & minimal base styles
    .options({
        postCss: [

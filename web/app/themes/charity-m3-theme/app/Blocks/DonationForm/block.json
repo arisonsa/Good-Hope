@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "charity-m3/donation-form",
+  "title": "Donation Form (M3)",
+  "category": "charity-m3-components",
+  "description": "Displays a secure, M3-styled donation form powered by Stripe.",
+  "keywords": ["donation", "give", "gift", "stripe", "payment", "m3"],
+  "icon": "money-alt",
+  "textdomain": "charity-m3",
+  "attributes": {
+    "title": {
+      "type": "string",
+      "default": "Make a Donation"
+    },
+    "description": {
+      "type": "string",
+      "default": "Your generous gift helps us continue our mission."
+    },
+    "suggestedAmounts": {
+      "type": "string",
+      "default": "25, 50, 100, 250"
+    },
+    "defaultFrequency": {
+      "type": "string",
+      "enum": ["one-time", "monthly"],
+      "default": "one-time"
+    },
+    "campaignId": {
+      "type": "number"
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  },
+  "editorScript": "charity-m3-donation-form-editor-script"
+}
