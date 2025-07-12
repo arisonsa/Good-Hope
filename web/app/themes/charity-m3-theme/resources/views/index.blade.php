@@ -9,10 +9,14 @@
       {!! get_search_form(false) !!}
     @endif
 
-    @while(have_posts()) @php(the_post())
-      @includeFirst(['partials.content-' . get_post_type(), 'partials.content'])
-    @endwhile
+    <x-m3.grid cols="responsive-default" gap="6">
+      @while(have_posts()) @php(the_post())
+        @include('partials.card-post', ['subtitle_context' => get_the_date()])
+      @endwhile
+    </x-m3.grid>
 
-    {!! get_the_posts_navigation() !!}
+    <div class="mt-8">
+      {!! get_the_posts_navigation() !!}
+    </div>
   </div>
 @endsection
