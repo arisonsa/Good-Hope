@@ -127,6 +127,20 @@ const buttonStyles = stylex.create({
         boxShadow: 'none',
     }
   },
+  icon: { // New variant for icon-only buttons
+    padding: '0.5rem', // 8px
+    width: '2.5rem', // 40px
+    height: '2.5rem',
+    backgroundColor: `color-mix(in srgb, ${M3SysColors.onSurface} 8%, transparent)`,
+    color: M3SysColors.onSurfaceVariant,
+    borderColor: 'transparent',
+    ':hover': {
+        backgroundColor: `color-mix(in srgb, ${M3SysColors.onSurface} 12%, transparent)`,
+    },
+    ':active': {
+        backgroundColor: `color-mix(in srgb, ${M3SysColors.onSurface} 16%, transparent)`,
+    }
+  },
   disabled: {
     opacity: 0.38, // M3 standard for disabled state
     cursor: 'not-allowed',
@@ -141,7 +155,7 @@ const buttonStyles = stylex.create({
 @customElement('charity-button')
 export class CharityButton extends LitElement {
   @property({ type: String })
-  variant: 'filled' | 'outlined' | 'text' | 'elevated' | 'tonal' = 'filled';
+  variant: 'filled' | 'outlined' | 'text' | 'elevated' | 'tonal' | 'icon' = 'filled';
 
   @property({ type: String })
   href?: string;
@@ -170,6 +184,7 @@ export class CharityButton extends LitElement {
       case 'text': return buttonStyles.text;
       case 'elevated': return buttonStyles.elevated;
       case 'tonal': return buttonStyles.tonal;
+      case 'icon': return buttonStyles.icon;
       default: return buttonStyles.filled;
     }
   }

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "charity-m3/carousel",
+  "title": "Carousel / Slider (M3)",
+  "category": "charity-m3-components",
+  "description": "A responsive carousel or slider for displaying any type of content (images, cards, etc.).",
+  "keywords": ["carousel", "slider", "gallery", "swiper", "m3"],
+  "icon": "images-alt2",
+  "textdomain": "charity-m3",
+  "attributes": {
+    "slidesPerView": {
+      "type": "number",
+      "default": 1
+    },
+    "spaceBetween": {
+      "type": "number",
+      "default": 16
+    },
+    "loop": {
+      "type": "boolean",
+      "default": false
+    },
+    "autoplay": {
+      "type": "boolean",
+      "default": false
+    },
+    "delay": {
+      "type": "number",
+      "default": 3000
+    },
+    "showNavigation": {
+      "type": "boolean",
+      "default": true
+    },
+    "showPagination": {
+      "type": "boolean",
+      "default": true
+    },
+    "effect": {
+      "type": "string",
+      "default": "slide"
+    },
+    "allowedBlocks": {
+        "type": "array"
+        // No default, allowing any block by default unless specified in edit.js
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  },
+  "editorScript": "charity-m3-carousel-editor-script"
+}
