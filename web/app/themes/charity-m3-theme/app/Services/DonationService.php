@@ -16,26 +16,16 @@
         {
             $this->db = $db;
             $this->table_name = $this->db->prefix . 'charity_m3_donations';
-            // Set Stripe API key from environment variables or WordPress options
-            // This should be configured securely, e.g. via .env file in Bedrock
-            // and accessed via getenv() or a config service.
-            Stripe::setApiKey(getenv('STRIPE_SECRET_KEY'));
-            Stripe::setAppInfo(
-                'Charity M3 WordPress Theme',
-                '0.1.0',
-                'https://example.com' // Replace with theme URI
-            );
+
+            $stripe_secret_key = getenv('STRIPE_SECRET_KEY');
+            if ($stripe_secret_key) {
+                Stripe::setApiKey($stripe_secret_key);
+                Stripe::setAppInfo('Charity M3 WordPress Theme', '0.1.0', home_url());
+            }
         }
 
         /**
-         * Process a donation using a payment method ID from Stripe.js.
-         *
-         * @param int    $amount   Amount in cents.
-         * @param string $currency e.g., 'usd'.
-         * @param string $paymentMethodId The ID from Stripe.js (e.g., 'pm_...').
-         * @param string $donorEmail
-         * @param array  $metadata Optional metadata for the donation.
-         * @return object|\WP_Error The saved donation record on success, or \WP_Error on failure.
+         * Process a one-time or recurring donation via Stripe.
          */
         public function processStripeDonation(int $amount, string $currency, string $paymentMethodId, string $donorEmail, array $metadata = [])
         {
@@ -43,59 +33,142 @@
                 return new \WP_Error('stripe_not_configured', __('Stripe is not configured.', 'charity-m3'));
             }
 
+            $frequency = $metadata['frequency'] ?? 'one-time';
+
             try {
-                // Create a PaymentIntent to confirm the payment
-                $paymentIntent = PaymentIntent::create([
-                    'amount' => $amount,
-                    'currency' => $currency,
-                    'payment_method' => $paymentMethodId,
-                    'confirmation_method' => 'manual', // We confirm it right away
-                    'confirm' => true,
-                    'receipt_email' => $donorEmail,
-                    'description' => __('Donation to Charity M3', 'charity-m3'),
-                    // If you create a Stripe Customer, you can attach the payment method to them for recurring payments
-                ]);
-
-                // If payment is successful, save the record to our database
-                if ($paymentIntent->status === 'succeeded') {
-                    $donation_data = [
-                        'donor_name'  => $metadata['donor_name'] ?? null,
-                        'donor_email' => $donorEmail,
-                        'amount'      => $amount,
-                        'currency'    => $currency,
-                        'frequency'   => $metadata['frequency'] ?? 'one-time',
-                        'status'      => 'succeeded',
-                        'gateway'     => 'stripe',
-                        'gateway_transaction_id' => $paymentIntent->id,
-                        'campaign_id' => $metadata['campaign_id'] ?? null,
-                        'donated_at'  => current_time('mysql', true),
-                    ];
-
-                    $result = $this->db->insert($this->table_name, $donation_data);
-
-                    if ($result) {
-                        $donation_id = $this->db->insert_id;
-                        // You could return the full record from DB
-                        return (object) array_merge(['id' => $donation_id], $donation_data);
-                    } else {
-                        // This is a critical error state: payment succeeded but DB insert failed.
-                        // Needs logging and manual intervention.
-                        error_log("CRITICAL: Stripe payment succeeded ({$paymentIntent->id}) but failed to save to database.");
-                        return new \WP_Error('db_insert_failed', __('Payment succeeded but could not save donation record.', 'charity-m3'));
-                    }
+                if ($frequency === 'monthly') {
+                    return $this->createStripeSubscription($amount, $currency, $paymentMethodId, $donorEmail, $metadata);
                 } else {
-                    // PaymentIntent was created but did not succeed (e.g., requires action)
-                    // You would handle other statuses here (e.g., requires_action) if not using `confirm: true`
-                    return new \WP_Error('payment_not_succeeded', __('Payment could not be completed.', 'charity-m3'), ['stripe_status' => $paymentIntent->status]);
+                    return $this->createOneTimeCharge($amount, $currency, $paymentMethodId, $donorEmail, $metadata);
                 }
-
             } catch (ApiErrorException $e) {
-                // Handle Stripe API errors (e.g., card declined)
                 return new \WP_Error('stripe_api_error', $e->getMessage(), ['stripe_error_code' => $e->getStripeCode()]);
             } catch (\Exception $e) {
-                // Handle other exceptions
                 return new \WP_Error('generic_error', $e->getMessage());
             }
+        }
+
+        private function createOneTimeCharge(int $amount, string $currency, string $paymentMethodId, string $donorEmail, array $metadata)
+        {
+            $paymentIntent = PaymentIntent::create([
+                'amount' => $amount,
+                'currency' => $currency,
+                'payment_method' => $paymentMethodId,
+                'confirm' => true,
+                'receipt_email' => $donorEmail,
+                'description' => __('One-time donation', 'charity-m3'),
+                'automatic_payment_methods' => ['enabled' => true, 'allow_redirects' => 'never'],
+            ]);
+
+            if ($paymentIntent->status === 'succeeded') {
+                $donation_data = [
+                    'donor_id'    => get_current_user_id() ?: null,
+                    'donor_name'  => $metadata['donor_name'] ?? null,
+                    'donor_email' => $donorEmail,
+                    'amount'      => $amount,
+                    'currency'    => $currency,
+                    'frequency'   => 'one-time',
+                    'status'      => 'succeeded',
+                    'gateway'     => 'stripe',
+                    'gateway_transaction_id' => $paymentIntent->id,
+                    'campaign_id' => $metadata['campaign_id'] ?? null,
+                ];
+                return $this->createDonationRecord($donation_data);
+            } else {
+                return new \WP_Error('payment_not_succeeded', __('Payment could not be completed.', 'charity-m3'));
+            }
+        }
+
+        private function createStripeSubscription(int $amount, string $currency, string $paymentMethodId, string $donorEmail, array $metadata)
+        {
+            $customer = $this->findOrCreateStripeCustomer($donorEmail, $metadata['donor_name'] ?? null, $paymentMethodId);
+            $price = $this->findOrCreateStripePrice($amount, $currency, 'month');
+
+            $subscription = \Stripe\Subscription::create([
+                'customer' => $customer->id,
+                'items' => [['price' => $price->id]],
+                'expand' => ['latest_invoice.payment_intent'],
+                'payment_behavior' => 'default_incomplete',
+                'payment_settings' => ['save_default_payment_method' => 'on_subscription'],
+            ]);
+
+            $payment_intent = $subscription->latest_invoice->payment_intent;
+
+            if ($payment_intent && $payment_intent->status === 'succeeded') {
+                 $donation_data = [
+                    'donor_id'    => get_current_user_id() ?: null,
+                    'donor_name'  => $metadata['donor_name'] ?? null,
+                    'donor_email' => $donorEmail,
+                    'amount'      => $amount,
+                    'currency'    => $currency,
+                    'frequency'   => 'monthly',
+                    'status'      => 'succeeded', // For the initial payment
+                    'gateway'     => 'stripe',
+                    'gateway_transaction_id' => $payment_intent->id,
+                    'stripe_customer_id' => $customer->id,
+                    'stripe_subscription_id' => $subscription->id,
+                    'campaign_id' => $metadata['campaign_id'] ?? null,
+                ];
+                return $this->createDonationRecord($donation_data);
+            } else {
+                 return new \WP_Error('subscription_not_succeeded', __('Could not start subscription. Payment failed or requires action.', 'charity-m3'));
+            }
+        }
+
+        private function findOrCreateStripeCustomer(string $email, ?string $name, string $paymentMethodId)
+        {
+            $existing_customers = \Stripe\Customer::all(['email' => $email, 'limit' => 1]);
+            if (!empty($existing_customers->data)) {
+                $customer = $existing_customers->data[0];
+                \Stripe\PaymentMethod::attach($paymentMethodId, ['customer' => $customer->id]);
+                \Stripe\Customer::update($customer->id, ['invoice_settings' => ['default_payment_method' => $paymentMethodId]]);
+                return $customer;
+            }
+
+            return \Stripe\Customer::create([
+                'email' => $email,
+                'name' => $name,
+                'payment_method' => $paymentMethodId,
+                'invoice_settings' => [ 'default_payment_method' => $paymentMethodId ],
+            ]);
+        }
+
+        private function findOrCreateStripePrice(int $amount, string $currency, string $interval)
+        {
+            $product_id = 'prod_charitym3_monthly_donation'; // A single product for all monthly donations
+
+            try {
+                $product = \Stripe\Product::retrieve($product_id);
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                $product = \Stripe\Product::create(['name' => 'Monthly Donation', 'id' => $product_id, 'type' => 'service']);
+            }
+
+            $prices = \Stripe\Price::all(['product' => $product->id, 'currency' => $currency, 'recurring' => ['interval' => $interval], 'unit_amount' => $amount, 'limit' => 1]);
+            if (!empty($prices->data)) {
+                return $prices->data[0];
+            }
+
+            return \Stripe\Price::create(['product' => $product->id, 'unit_amount' => $amount, 'currency' => $currency, 'recurring' => ['interval' => $interval]]);
+        }
+
+        public function createDonationRecord(array $data)
+        {
+            $result = $this->db->insert($this->table_name, $data);
+            if ($result) {
+                $donation_id = $this->db->insert_id;
+                // If a logged-in user made this donation, link customer ID to them
+                if (!empty($data['donor_id']) && !empty($data['stripe_customer_id'])) {
+                    update_user_meta($data['donor_id'], 'stripe_customer_id', $data['stripe_customer_id']);
+                }
+                return (object) array_merge(['id' => $donation_id], $data);
+            }
+            error_log("CRITICAL: Stripe payment succeeded ({$data['gateway_transaction_id']}) but failed to save to database.");
+            return new \WP_Error('db_insert_failed', __('Payment succeeded but could not save donation record.', 'charity-m3'));
+        }
+
+        public function getDonationBySubscriptionId(string $subscription_id)
+        {
+            return $this->db->get_row($this->db->prepare("SELECT * FROM {$this->table_name} WHERE stripe_subscription_id = %s ORDER BY id ASC LIMIT 1", $subscription_id));
         }
 
         /**

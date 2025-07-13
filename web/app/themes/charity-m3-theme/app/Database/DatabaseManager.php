@@ -29,6 +29,7 @@ class DatabaseManager
 
         $sql = "CREATE TABLE $table_name (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            donor_id BIGINT UNSIGNED NULL,
             donor_name VARCHAR(255) NULL,
             donor_email VARCHAR(255) NOT NULL,
             amount INT UNSIGNED NOT NULL,
@@ -37,13 +38,18 @@ class DatabaseManager
             status VARCHAR(50) NOT NULL,
             gateway VARCHAR(50) NOT NULL,
             gateway_transaction_id VARCHAR(255) NOT NULL,
+            stripe_customer_id VARCHAR(255) NULL,
+            stripe_subscription_id VARCHAR(255) NULL,
             campaign_id BIGINT UNSIGNED NULL,
             donated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             UNIQUE KEY gateway_transaction_id (gateway_transaction_id),
+            KEY donor_id (donor_id),
             KEY donor_email (donor_email),
             KEY status (status),
-            KEY campaign_id (campaign_id)
+            KEY campaign_id (campaign_id),
+            KEY stripe_customer_id (stripe_customer_id),
+            KEY stripe_subscription_id (stripe_subscription_id)
         ) $charset_collate;";
 
         dbDelta($sql);
