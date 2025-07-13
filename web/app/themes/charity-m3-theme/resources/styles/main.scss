@@ -2,6 +2,13 @@
  * Main theme SCSS file.
  */
 
+// Import SwiperJS styles
+@import 'swiper/css';
+@import 'swiper/css/navigation'; // If using navigation module
+@import 'swiper/css/pagination'; // If using pagination module
+@import 'swiper/css/effect-fade';   // If using fade effect module
+// Add other effect or module CSS as needed
+
 // 1. Material Design 3 Theming - CSS Custom Properties
 // Ref: https://m3.material.io/styles/color/the-color-system/tokens
 // Ref: https://m3.material.io/styles/typography/tokens

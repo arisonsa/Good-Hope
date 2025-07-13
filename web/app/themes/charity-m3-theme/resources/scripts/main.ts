@@ -15,6 +15,7 @@ import './components/charity-grid'; // Registers <charity-grid>
 import './components/charity-cta-banner'; // Registers <charity-cta-banner>
 import './components/charity-button'; // Registers <charity-button>
 import './components/charity-donation-form'; // Registers <charity-donation-form>
+import './components/charity-carousel'; // Registers <charity-carousel>
 
 // Example:
 
