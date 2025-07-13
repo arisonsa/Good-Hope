@@ -35,6 +35,28 @@ class NewsletterServiceProvider extends ServiceProvider
     }
 
     /**
+     * Enqueue assets for the Campaign editor screen.
+     */
+    public function enqueueCampaignEditorAssets()
+    {
+        $screen = get_current_screen();
+        if ($screen && $screen->id === 'newsletter_campaign') {
+            $sidebar_asset_path = \Roots\asset('scripts/plugins/campaign-sidebar.js');
+            if ($sidebar_asset_path->exists()) {
+                wp_enqueue_script(
+                    'charity-m3-campaign-sidebar-script',
+                    $sidebar_asset_path->uri(),
+                    ['wp-plugins', 'wp-edit-post', 'wp-element', 'wp-components', 'wp-data', 'wp-i18n', 'wp-api-fetch', 'wp-core-data'],
+                    $sidebar_asset_path->version(),
+                    true
+                );
+            } elseif (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("Campaign Sidebar script not found at: " . $sidebar_asset_path->path());
+            }
+        }
+    }
+
+    /**
      * Bootstrap any application services.
      *
      * @return void
@@ -44,8 +66,12 @@ class NewsletterServiceProvider extends ServiceProvider
         // Register Custom Post Type for Newsletter Campaigns
         $this->registerNewsletterCampaignCPT();
 
-        // Register REST API endpoints for tracking
+        // Register REST API endpoints
         add_action('rest_api_init', [$this, 'registerTrackingRoutes']);
+        add_action('rest_api_init', [$this, 'registerCampaignActionRoutes']); // Add this
+
+        // Enqueue campaign-specific editor assets
+        add_action('enqueue_block_editor_assets', [$this, 'enqueueCampaignEditorAssets']);
 
         // Register WP-GraphQL types and mutations
         add_action('graphql_register_types', [$this, 'registerGraphQLTypesAndMutations']);
@@ -322,5 +348,57 @@ class NewsletterServiceProvider extends ServiceProvider
 
         // TODO: Add GraphQL queries for fetching campaigns (e.g., allCampaigns, campaignById)
         // TODO: Add GraphQL mutations for unsubscribing.
+    }
+
+    /**
+     * Register REST API routes for campaign actions like sending tests.
+     */
+    public function registerCampaignActionRoutes()
+    {
+        register_rest_route('charitym3/v1', '/campaigns/(?P<id>\d+)/send-test', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handleSendTestEmail'],
+            'permission_callback' => function () {
+                // Ensure the user has permission to edit the campaign
+                return current_user_can('edit_posts');
+            },
+            'args' => [
+                'id' => ['required' => true, 'validate_callback' => 'is_numeric'],
+                'email' => ['required' => true, 'validate_callback' => 'is_email', 'sanitize_callback' => 'sanitize_email'],
+            ],
+        ]);
+    }
+
+    /**
+     * Handle sending a test email for a campaign.
+     */
+    public function handleSendTestEmail(\WP_REST_Request $request)
+    {
+        $campaign_id = (int) $request['id'];
+        $test_email = $request['email'];
+
+        /** @var \App\Services\CampaignService $campaignService */
+        $campaignService = $this->app->make(\App\Services\CampaignService::class);
+
+        $result = $campaignService->sendTestCampaign($campaign_id, $test_email);
+
+        if (is_wp_error($result)) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => $result->get_error_message(),
+            ], 400);
+        }
+
+        if ($result === false) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => __('Failed to send test email. Check server logs.', 'charity-m3'),
+            ], 500);
+        }
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'message' => sprintf(__('Test email sent successfully to %s.', 'charity-m3'), $test_email),
+        ], 200);
     }
 }

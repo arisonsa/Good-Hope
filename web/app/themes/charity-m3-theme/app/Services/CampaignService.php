@@ -219,4 +219,49 @@ class CampaignService
         // In a real scenario, update recipients_count as well.
         return true;
     }
+
+    /**
+     * Send a test version of a campaign to a specific email address.
+     *
+     * @param int $campaign_id
+     * @param string $test_email
+     * @return bool|\WP_Error True on success, false or WP_Error on failure.
+     */
+    public function sendTestCampaign(int $campaign_id, string $test_email)
+    {
+        $campaign = $this->getCampaignById($campaign_id);
+        if (!$campaign) {
+            return new \WP_Error('campaign_not_found', __('Campaign not found.', 'charity-m3'));
+        }
+
+        $subject = get_post_meta($campaign_id, '_campaign_subject', true) ?: $campaign->post_title;
+        $content = $campaign->post_content; // Raw content from editor
+
+        // Apply content filters to process shortcodes, embeds, etc.
+        $content = apply_filters('the_content', $content);
+
+        // Prepare email headers
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        // Could add From name/email from settings here
+        // $headers[] = 'From: My Awesome Charity <noreply@example.com>';
+
+        // TODO: In a real implementation, parse content to inject tracking pixel and wrap links
+        // For a test send, this might be optional or use a dummy subscriber ID (e.g., 0).
+        // $trackingService = app(\App\Services\TrackingService::class);
+        // $content = $this->injectTracking($content, $campaign_id, 0); // Example with subscriber_id 0 for tests
+
+        // Add a notice that this is a test email
+        $test_notice = '<p style="text-align:center; padding:10px; background-color:#f0f0f0; border:1px solid #ddd;"><em>' . __('This is a test email.', 'charity-m3') . '</em></p>';
+        $content = $test_notice . $content;
+
+        // Use wp_mail to send
+        $sent = wp_mail($test_email, '[TEST] ' . $subject, $content, $headers);
+
+        if (!$sent) {
+            // wp_mail can fail silently; checking for errors might require other plugins or server log inspection.
+            return new \WP_Error('wp_mail_failed', __('The email could not be sent. Your server may not be configured to send emails.', 'charity-m3'));
+        }
+
+        return true;
+    }
 }
