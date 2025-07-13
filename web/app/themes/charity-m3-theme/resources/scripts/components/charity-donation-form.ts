@@ -229,6 +229,17 @@ export class CharityDonationForm extends LitElement {
         }
     }
 
+    private getButtonText(): string {
+        if (this.isLoading) {
+            return 'Processing...';
+        }
+        const amountFormatted = `$${(this.amount / 100).toFixed(2)}`;
+        if (this.frequency === 'monthly') {
+            return `Donate ${amountFormatted} / month`;
+        }
+        return `Donate ${amountFormatted}`;
+    }
+
     render() {
         if (this.successMessage) {
             return html`<div ${stylex.props(styles.successMessage)}>${this.successMessage}</div>`;
@@ -273,7 +284,7 @@ export class CharityDonationForm extends LitElement {
                 </div>
                 <div id="card-errors" role="alert" ${stylex.props(styles.errorMessage)}>${this.errorMessage}</div>
                 <charity-button type="submit" variant="filled" ?disabled=${this.isLoading || !this.amount}>
-                    ${this.isLoading ? 'Processing...' : `Donate $${(this.amount / 100).toFixed(2)}`}
+                    ${this.getButtonText()}
                 </charity-button>
             </form>
         `;

@@ -83,14 +83,13 @@ class DonationsListTable extends \WP_List_Table
     protected function column_default($item, $column_name)
     {
         switch ($column_name) {
-            case 'frequency':
             case 'status':
                 return esc_html(ucfirst($item->$column_name));
             case 'gateway_transaction_id':
                 // Could link to Stripe dashboard if desired
-                return esc_html($item->$column_name);
+                return esc_html($item->gateway_transaction_id);
             case 'donated_at':
-                return esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $item->$column_name));
+                return esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $item->donated_at));
             default:
                 return '---';
         }
@@ -111,7 +110,17 @@ class DonationsListTable extends \WP_List_Table
     {
         // Amount is stored in cents, so format it correctly
         $amount_formatted = number_format($item->amount / 100, 2);
-        return esc_html($amount_formatted . ' ' . strtoupper($item->currency));
+        return '<strong>' . esc_html($amount_formatted . ' ' . strtoupper($item->currency)) . '</strong>';
+    }
+
+    protected function column_frequency($item)
+    {
+        $output = esc_html(ucfirst($item->frequency));
+        if ($item->stripe_subscription_id) {
+            // Could link to Stripe subscription here
+            $output .= '<br><small style="color: #777;">' . sprintf(__('Sub ID: %s', 'charity-m3'), esc_html($item->stripe_subscription_id)) . '</small>';
+        }
+        return $output;
     }
 
     public function no_items()
