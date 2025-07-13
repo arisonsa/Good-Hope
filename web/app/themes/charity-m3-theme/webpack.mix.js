@@ -28,7 +28,8 @@ mix.ts('resources/scripts/main.ts', 'public/scripts') // Output: public/scripts/
    .js('app/Blocks/CardGrid/edit.js', 'public/scripts/blocks/card-grid-editor.js')
    .js('app/Blocks/CardItem/edit.js', 'public/scripts/blocks/card-item-editor.js')
    .js('app/Blocks/DonationForm/edit.js', 'public/scripts/blocks/donation-form-editor.js')
-   .js('app/Blocks/Carousel/edit.js', 'public/scripts/blocks/carousel-editor.js') // New: Carousel editor script
+   .js('app/Blocks/Carousel/edit.js', 'public/scripts/blocks/carousel-editor.js')
+   .js('app/Blocks/PostList/edit.js', 'public/scripts/blocks/post-list-editor.js') // New: Post List editor script
    // Gutenberg sidebar plugins
    .js('app/Blocks/CampaignSidebar/index.js', 'public/scripts/plugins/campaign-sidebar.js')
    .sass('resources/styles/main.scss', 'public/styles/main.css') // For global M3 tokens & minimal base styles

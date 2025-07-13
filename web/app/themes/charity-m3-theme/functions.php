@@ -50,7 +50,8 @@ if (! class_exists(\Roots\Acorn\Application::class)) {
                     \App\Providers\ThemeServiceProvider::class,
                     \App\Providers\NewsletterServiceProvider::class,
                     \App\Providers\BlocksServiceProvider::class,
-                    \App\Providers\DonationServiceProvider::class, // Add this line
+                    \App\Providers\DonationServiceProvider::class,
+                    \App\Providers\CPTServiceProvider::class, // Add this line
                 ])
                 ->boot();
         } catch (\Exception $e) {

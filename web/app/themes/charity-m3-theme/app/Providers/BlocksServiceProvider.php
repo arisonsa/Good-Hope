@@ -9,6 +9,7 @@ use App\Blocks\CardGridBlock;
 use App\Blocks\CardItemBlock;
 use App\Blocks\DonationFormBlock;
 use App\Blocks\CarouselBlock;
+use App\Blocks\PostListBlock;
 
 class BlocksServiceProvider extends ServiceProvider
 {
@@ -63,7 +64,8 @@ class BlocksServiceProvider extends ServiceProvider
             new CardGridBlock($this->app);
             new CardItemBlock($this->app);
             new DonationFormBlock($this->app);
-            new CarouselBlock($this->app); // Add this
+            new CarouselBlock($this->app);
+            new PostListBlock($this->app); // Add this
         }
     }
 }
