@@ -27,7 +27,9 @@ mix.ts('resources/scripts/main.ts', 'public/scripts') // Output: public/scripts/
    .js('app/Blocks/FeaturedCallout/edit.js', 'public/scripts/blocks/featured-callout-editor.js')
    .js('app/Blocks/CardGrid/edit.js', 'public/scripts/blocks/card-grid-editor.js')
    .js('app/Blocks/CardItem/edit.js', 'public/scripts/blocks/card-item-editor.js')
-   .js('app/Blocks/DonationForm/edit.js', 'public/scripts/blocks/donation-form-editor.js') // New: Donation Form editor script
+   .js('app/Blocks/DonationForm/edit.js', 'public/scripts/blocks/donation-form-editor.js')
+   // Gutenberg sidebar plugins
+   .js('app/Blocks/CampaignSidebar/index.js', 'public/scripts/plugins/campaign-sidebar.js') // New: Campaign Sidebar script
    .sass('resources/styles/main.scss', 'public/styles/main.css') // For global M3 tokens & minimal base styles
    .options({
        postCss: [

@@ -396,10 +396,12 @@ class AdminManager
             if ($key === 'title') { // Add our custom columns after 'title'
                 $new_columns['campaign_subject'] = __('Subject', 'charity-m3');
                 $new_columns['campaign_status'] = __('Status', 'charity-m3');
-                $new_columns['campaign_scheduled_at'] = __('Scheduled At', 'charity-m3');
+                $new_columns['campaign_stats'] = __('Stats', 'charity-m3'); // Combined Stats Column
                 $new_columns['campaign_sent_at'] = __('Sent At', 'charity-m3');
             }
         }
+        unset($new_columns['campaign_scheduled_at']); // Remove separate scheduled_at to save space
+
         // If 'date' column exists, move it to the end or after our custom columns
         if (isset($new_columns['date'])) {
             $date_col = $new_columns['date'];
@@ -421,9 +423,37 @@ class AdminManager
             case 'campaign_status':
                 echo esc_html(ucfirst(get_post_meta($post_id, '_campaign_status', true) ?: 'Draft'));
                 break;
-            case 'campaign_scheduled_at':
-                $scheduled_at = get_post_meta($post_id, '_campaign_scheduled_at', true);
-                echo $scheduled_at ? esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $scheduled_at)) : 'N/A';
+            case 'campaign_status':
+                $status = get_post_meta($post_id, '_campaign_status', true) ?: 'draft';
+                echo '<strong>' . esc_html(ucfirst($status)) . '</strong>';
+                if ($status === 'scheduled') {
+                    $scheduled_at = get_post_meta($post_id, '_campaign_scheduled_at', true);
+                    if ($scheduled_at) {
+                        echo '<br><small>' . esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $scheduled_at)) . '</small>';
+                    }
+                }
+                break;
+            case 'campaign_stats':
+                $status = get_post_meta($post_id, '_campaign_status', true);
+                if ($status !== 'sent') {
+                    echo 'N/A';
+                    return;
+                }
+
+                $stats = $this->trackingService->getCampaignAggregatedStats($post_id);
+                $recipients = (int) get_post_meta($post_id, '_campaign_recipients_count', true);
+
+                if ($recipients > 0) {
+                    $open_rate = round(($stats['unique_opens'] / $recipients) * 100, 2);
+                    // Click-through rate of delivered emails
+                    $click_rate = round(($stats['unique_clicks'] / $recipients) * 100, 2);
+                } else {
+                    $open_rate = $click_rate = 0;
+                }
+
+                echo '<strong>' . __('Recipients:', 'charity-m3') . '</strong> ' . esc_html(number_format_i18n($recipients)) . '<br>';
+                echo '<strong>' . __('Opens:', 'charity-m3') . '</strong> ' . esc_html(number_format_i18n($stats['unique_opens'])) . ' (' . esc_html($open_rate) . '%)<br>';
+                echo '<strong>' . __('Clicks:', 'charity-m3') . '</strong> ' . esc_html(number_format_i18n($stats['unique_clicks'])) . ' (' . esc_html($click_rate) . '%)';
                 break;
             case 'campaign_sent_at':
                 $sent_at = get_post_meta($post_id, '_campaign_sent_at', true);
