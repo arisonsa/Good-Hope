@@ -1,7 +1,19 @@
 @php
   // This partial assumes it's being called inside The Loop.
   // It can be passed optional context, e.g., for the subtitle.
-  $subtitle_context = $subtitle_context ?? get_the_date(); // Default to date if no context passed
+
+  // Determine a sensible default subtitle based on post type if no context is given
+  if (!isset($subtitle_context)) {
+      if (get_post_type() === 'program') {
+          // In the future, this could be a custom field like 'Program Status: Active'
+          $subtitle_context = __('Program', 'charity-m3');
+      } elseif (get_post_type() === 'impact_story') {
+          // In the future, this could be a custom field like 'Region: Global'
+          $subtitle_context = __('Impact Story', 'charity-m3');
+      } else {
+          $subtitle_context = get_the_date(); // Default for standard posts
+      }
+  }
 
   $card_data = [
       'title' => get_the_title(),

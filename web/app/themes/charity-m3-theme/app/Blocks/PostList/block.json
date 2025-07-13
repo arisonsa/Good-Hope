@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "charity-m3/post-list",
+  "title": "Post List (M3)",
+  "category": "charity-m3-components",
+  "description": "Displays a configurable grid of posts, pages, or any custom post type.",
+  "keywords": ["posts", "list", "grid", "query", "latest", "cpt"],
+  "icon": "list-view",
+  "textdomain": "charity-m3",
+  "attributes": {
+    "postType": {
+      "type": "string",
+      "default": "post"
+    },
+    "taxonomy": {
+      "type": "string",
+      "default": ""
+    },
+    "terms": {
+      "type": "array",
+      "default": []
+    },
+    "count": {
+      "type": "number",
+      "default": 3
+    },
+    "orderBy": {
+      "type": "string",
+      "default": "date"
+    },
+    "order": {
+      "type": "string",
+      "default": "DESC"
+    },
+    "columns": {
+      "type": "string",
+      "default": "3"
+    },
+    "gap": {
+      "type": "string",
+      "default": "6"
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  },
+  "editorScript": "charity-m3-post-list-editor-script"
+}
