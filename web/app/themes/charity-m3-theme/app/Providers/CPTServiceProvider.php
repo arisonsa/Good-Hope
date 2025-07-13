@@ -51,6 +51,9 @@ class CPTServiceProvider extends ServiceProvider
             'menu_icon'          => 'dashicons-clipboard',
             'supports'           => ['title', 'editor', 'thumbnail', 'excerpt', 'custom-fields', 'revisions'],
             'show_in_rest'       => true,
+            'show_in_graphql'    => true,
+            'graphql_single_name' => 'Program',
+            'graphql_plural_name' => 'Programs',
         ];
         register_post_type('program', $args);
     }
@@ -87,6 +90,9 @@ class CPTServiceProvider extends ServiceProvider
             'menu_icon'          => 'dashicons-format-aside',
             'supports'           => ['title', 'editor', 'thumbnail', 'excerpt', 'custom-fields', 'revisions'],
             'show_in_rest'       => true,
+            'show_in_graphql'    => true,
+            'graphql_single_name' => 'ImpactStory',
+            'graphql_plural_name' => 'ImpactStories',
         ];
         register_post_type('impact_story', $args);
     }

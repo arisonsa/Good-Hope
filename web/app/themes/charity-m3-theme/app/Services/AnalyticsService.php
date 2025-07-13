@@ -22,6 +22,12 @@ class AnalyticsService
      */
     public function getDonationsOverTime(string $period = 'day', int $limit = 30): array
     {
+        $transient_key = "charity_m3_donations_over_time_{$period}_{$limit}";
+        $cached_data = get_transient($transient_key);
+        if (false !== $cached_data) {
+            return $cached_data;
+        }
+
         $donations_table = $this->db->prefix . 'charity_m3_donations';
         $date_format = '%Y-%m-%d'; // Daily
         if ($period === 'month') {
@@ -43,7 +49,9 @@ class AnalyticsService
             date('Y-m-d H:i:s', strtotime("-{$limit} {$period}"))
         );
 
-        return $this->db->get_results($sql, ARRAY_A);
+        $results = $this->db->get_results($sql, ARRAY_A);
+        set_transient($transient_key, $results, 3 * HOUR_IN_SECONDS); // Cache for 3 hours
+        return $results;
     }
 
     /**
@@ -55,6 +63,12 @@ class AnalyticsService
      */
     public function getSubscribersOverTime(string $period = 'day', int $limit = 30): array
     {
+        $transient_key = "charity_m3_subscribers_over_time_{$period}_{$limit}";
+        $cached_data = get_transient($transient_key);
+        if (false !== $cached_data) {
+            return $cached_data;
+        }
+
         $subscribers_table = $this->db->prefix . 'charity_m3_subscribers';
         $date_format = '%Y-%m-%d';
         if ($period === 'month') {
@@ -75,6 +89,8 @@ class AnalyticsService
             date('Y-m-d H:i:s', strtotime("-{$limit} {$period}"))
         );
 
-        return $this->db->get_results($sql, ARRAY_A);
+        $results = $this->db->get_results($sql, ARRAY_A);
+        set_transient($transient_key, $results, 3 * HOUR_IN_SECONDS); // Cache for 3 hours
+        return $results;
     }
 }
