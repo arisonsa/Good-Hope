@@ -68,7 +68,10 @@ class NewsletterServiceProvider extends ServiceProvider
 
         // Register REST API endpoints
         add_action('rest_api_init', [$this, 'registerTrackingRoutes']);
-        add_action('rest_api_init', [$this, 'registerCampaignActionRoutes']); // Add this
+        add_action('rest_api_init', [$this, 'registerCampaignActionRoutes']);
+
+        // Hook into post save to handle scheduling
+        add_action('save_post_newsletter_campaign', [$this, 'handleCampaignSave'], 10, 2);
 
         // Enqueue campaign-specific editor assets
         add_action('enqueue_block_editor_assets', [$this, 'enqueueCampaignEditorAssets']);
@@ -76,8 +79,32 @@ class NewsletterServiceProvider extends ServiceProvider
         // Register WP-GraphQL types and mutations
         add_action('graphql_register_types', [$this, 'registerGraphQLTypesAndMutations']);
 
-        // Add other hooks related to the newsletter system if needed
-        // For example, handling AJAX requests for subscriptions if not using REST/GraphQL.
+        // Register custom cron schedules and hooks
+        add_filter('cron_schedules', [$this, 'addCronIntervals']);
+        $this->registerCronHooks();
+    }
+
+    /**
+     * Register custom cron intervals.
+     */
+    public function addCronIntervals($schedules)
+    {
+        $schedules['five_minutes'] = [
+            'interval' => 300, // 5 * 60 seconds
+            'display'  => esc_html__('Every Five Minutes'),
+        ];
+        return $schedules;
+    }
+
+    /**
+     * Register cron action hooks.
+     */
+    protected function registerCronHooks()
+    {
+        $campaignService = $this->app->make(\App\Services\CampaignService::class);
+
+        add_action('charity_m3_initiate_campaign_cron', [$campaignService, 'initiateCampaignSending'], 10, 1);
+        add_action('charity_m3_process_campaign_batch_cron', [$campaignService, 'processCampaignBatch'], 10, 1);
     }
 
     /**
@@ -367,6 +394,61 @@ class NewsletterServiceProvider extends ServiceProvider
                 'email' => ['required' => true, 'validate_callback' => 'is_email', 'sanitize_callback' => 'sanitize_email'],
             ],
         ]);
+
+        // Endpoint for "Send Now"
+        register_rest_route('charitym3/v1', '/campaigns/(?P<id>\d+)/send-now', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handleSendNow'],
+            'permission_callback' => function (\WP_REST_Request $request) {
+                return current_user_can('edit_post', $request['id']);
+            },
+            'args' => [
+                'id' => ['required' => true, 'validate_callback' => 'is_numeric'],
+            ],
+        ]);
+    }
+
+    /**
+     * Handle "Send Now" action via REST API.
+     */
+    public function handleSendNow(\WP_REST_Request $request)
+    {
+        $campaign_id = (int) $request['id'];
+
+        /** @var \App\Services\CampaignService $campaignService */
+        $campaignService = $this->app->make(\App\Services\CampaignService::class);
+        $result = $campaignService->initiateCampaignSending($campaign_id);
+
+        if (is_wp_error($result)) {
+            return new \WP_REST_Response(['success' => false, 'message' => $result->get_error_message()], 400);
+        }
+        return new \WP_REST_Response(['success' => true, 'message' => __('Campaign sending process has been initiated.', 'charity-m3')], 200);
+    }
+
+    /**
+     * Handle campaign post save to trigger scheduling.
+     */
+    public function handleCampaignSave($post_id, $post)
+    {
+        // Check for autosave, revision, or if user can't edit post
+        if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || $post->post_status === 'auto-draft' || !current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        $status = get_post_meta($post_id, '_campaign_status', true);
+        $scheduled_at_gmt = get_post_meta($post_id, '_campaign_scheduled_at', true); // Should be in GMT if saved correctly
+
+        if ($status === 'scheduled' && !empty($scheduled_at_gmt)) {
+            $timestamp = strtotime($scheduled_at_gmt . ' GMT');
+            if ($timestamp > time()) { // Ensure schedule is in the future
+                /** @var \App\Services\CampaignService $campaignService */
+                $campaignService = $this->app->make(\App\Services\CampaignService::class);
+                $campaignService->scheduleCampaign($post_id, $timestamp);
+            }
+        } else {
+            // If status is not 'scheduled', clear any existing cron job for this campaign
+            wp_clear_scheduled_hook('charity_m3_initiate_campaign_cron', [$post_id]);
+        }
     }
 
     /**

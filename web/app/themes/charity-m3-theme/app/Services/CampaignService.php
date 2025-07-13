@@ -15,6 +15,70 @@ class CampaignService
     }
 
     /**
+     * Schedule a campaign to be sent at a specific time.
+     *
+     * @param int $campaign_id
+     * @param int $timestamp Unix timestamp for when to send.
+     * @return bool|\WP_Error
+     */
+    public function scheduleCampaign(int $campaign_id, int $timestamp)
+    {
+        // Clear any previously scheduled event for this campaign to avoid duplicates
+        wp_clear_scheduled_hook('charity_m3_initiate_campaign_cron', [$campaign_id]);
+
+        $this->updateCampaignMeta($campaign_id, 'campaign_status', 'scheduled');
+        $this->updateCampaignMeta($campaign_id, 'campaign_scheduled_at', gmdate('Y-m-d H:i:s', $timestamp));
+
+        $result = wp_schedule_single_event($timestamp, 'charity_m3_initiate_campaign_cron', [$campaign_id]);
+
+        if ($result === false) {
+            return new \WP_Error('schedule_failed', __('Could not schedule the campaign. Please try again.', 'charity-m3'));
+        }
+
+        return true;
+    }
+
+    /**
+     * Initiates the campaign sending process.
+     *
+     * @param int $campaign_id
+     * @return bool|\WP_Error
+     */
+    public function initiateCampaignSending(int $campaign_id)
+    {
+        // Prevent re-sending a campaign that is already sending or sent
+        $status = get_post_meta($campaign_id, '_campaign_status', true);
+        if (in_array($status, ['sending', 'sent'])) {
+            return new \WP_Error('already_sent', __('This campaign is already sending or has been sent.', 'charity-m3'));
+        }
+
+        /** @var \App\Services\SubscriberService $subscriberService */
+        $subscriberService = app(\App\Services\SubscriberService::class);
+        $subscribers = $subscriberService->getSubscribers(['status' => 'subscribed', 'per_page' => -1]); // Get all subscribed users
+
+        if (empty($subscribers['items'])) {
+            $this->updateCampaignMeta($campaign_id, 'campaign_status', 'sent'); // No one to send to, mark as sent
+            $this->updateCampaignMeta($campaign_id, 'campaign_recipients_count', 0);
+            return new \WP_Error('no_subscribers', __('There are no subscribed users to send this campaign to.', 'charity-m3'));
+        }
+
+        $recipient_ids = wp_list_pluck($subscribers['items'], 'id');
+        $this->updateCampaignMeta($campaign_id, 'campaign_recipients_count', count($recipient_ids));
+        $this->updateCampaignMeta($campaign_id, 'campaign_status', 'sending');
+
+        // Store recipient IDs in a transient
+        set_transient('charity_m3_campaign_' . $campaign_id . '_recipients', $recipient_ids, DAY_IN_SECONDS);
+
+        // Schedule the batch processor if not already scheduled
+        if (!wp_next_scheduled('charity_m3_process_campaign_batch_cron', [$campaign_id])) {
+            // Schedule to run immediately and then every 5 minutes
+            wp_schedule_event(time(), 'five_minutes', 'charity_m3_process_campaign_batch_cron', [$campaign_id]);
+        }
+
+        return true;
+    }
+
+    /**
      * Get campaign data by ID.
      *
      * @param int $campaign_id
@@ -263,5 +327,106 @@ class CampaignService
         }
 
         return true;
+    }
+
+    /**
+     * Process a single batch of emails for a campaign.
+     * Intended to be called by WP-Cron.
+     *
+     * @param int $campaign_id
+     */
+    public function processCampaignBatch(int $campaign_id)
+    {
+        $transient_key = 'charity_m3_campaign_' . $campaign_id . '_recipients';
+        $recipient_ids = get_transient($transient_key);
+
+        if (empty($recipient_ids)) {
+            // All done, clean up
+            wp_clear_scheduled_hook('charity_m3_process_campaign_batch_cron', [$campaign_id]);
+            $this->updateCampaignMeta($campaign_id, 'campaign_status', 'sent');
+            $this->updateCampaignMeta($campaign_id, 'campaign_sent_at', current_time('mysql', true));
+            return;
+        }
+
+        $batch_size = apply_filters('charity_m3_campaign_batch_size', 50);
+        $batch_ids = array_slice($recipient_ids, 0, $batch_size);
+
+        $campaign = $this->getCampaignById($campaign_id);
+        if (!$campaign) {
+            wp_clear_scheduled_hook('charity_m3_process_campaign_batch_cron', [$campaign_id]);
+            return; // Campaign was deleted, stop processing.
+        }
+        $subject = get_post_meta($campaign_id, '_campaign_subject', true) ?: $campaign->post_title;
+        $content = apply_filters('the_content', $campaign->post_content);
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+
+        /** @var \App\Services\SubscriberService $subscriberService */
+        $subscriberService = app(\App\Services\SubscriberService::class);
+
+        foreach ($batch_ids as $subscriber_id) {
+            $subscriber = $subscriberService->getSubscriberById($subscriber_id);
+            if (!$subscriber || $subscriber->status !== 'subscribed') {
+                continue; // Skip if subscriber not found or no longer subscribed
+            }
+
+            $personalized_content = $this->injectTracking($content, $campaign_id, $subscriber_id);
+
+            // TODO: Add personalization (e.g., replace {{name}} with $subscriber->name)
+
+            wp_mail($subscriber->email, $subject, $personalized_content, $headers);
+        }
+
+        // Update the transient with the remaining IDs
+        $remaining_ids = array_slice($recipient_ids, $batch_size);
+        set_transient($transient_key, $remaining_ids, DAY_IN_SECONDS);
+
+        // If that was the last batch, clean up immediately instead of waiting for next cron run
+        if (empty($remaining_ids)) {
+            wp_clear_scheduled_hook('charity_m3_process_campaign_batch_cron', [$campaign_id]);
+            $this->updateCampaignMeta($campaign_id, 'campaign_status', 'sent');
+            $this->updateCampaignMeta($campaign_id, 'campaign_sent_at', current_time('mysql', true));
+        }
+    }
+
+    /**
+     * Injects tracking pixel and wraps links for a given HTML content.
+     *
+     * @param string $html
+     * @param int $campaign_id
+     * @param int $subscriber_id
+     * @return string
+     */
+    private function injectTracking(string $html, int $campaign_id, int $subscriber_id): string
+    {
+        // Inject Open Tracking Pixel
+        $pixel_url = rest_url("charitym3/v1/track/open/{$campaign_id}/{$subscriber_id}/pixel.png");
+        $tracking_pixel = '<img src="' . esc_url($pixel_url) . '" width="1" height="1" alt="" style="display:none;"/>';
+        // Append pixel before closing body tag
+        $html = str_ireplace('</body>', $tracking_pixel . '</body>', $html, $count);
+        if ($count === 0) { // If no body tag, append to end
+            $html .= $tracking_pixel;
+        }
+
+        // Wrap Links for Click Tracking
+        if (class_exists('DOMDocument')) {
+            $dom = new \DOMDocument();
+            // Suppress errors from malformed HTML
+            libxml_use_internal_errors(true);
+            $dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+            libxml_clear_errors();
+
+            $links = $dom->getElementsByTagName('a');
+            foreach ($links as $link) {
+                $original_href = $link->getAttribute('href');
+                if ($original_href && !str_starts_with($original_href, '#') && filter_var($original_href, FILTER_VALIDATE_URL)) {
+                    $tracking_url_base = rest_url("charitym3/v1/track/click/{$campaign_id}/{$subscriber_id}");
+                    $tracking_url = add_query_arg('url', rawurlencode($original_href), $tracking_url_base);
+                    $link->setAttribute('href', esc_url($tracking_url));
+                }
+            }
+            $html = $dom->saveHTML();
+        }
+
+        return $html;
     }
 }

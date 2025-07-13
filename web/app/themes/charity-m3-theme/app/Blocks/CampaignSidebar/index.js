@@ -34,12 +34,13 @@ const CampaignSidebarPlugin = () => {
             isSaving: editor.isSavingPost() || editor.isAutosavingPost(),
         };
     }, []);
-    const { editPost } = useDispatch('core/editor');
+    const { editPost, savePost } = useDispatch('core/editor');
 
-    // State for test email sending
+    // State for various actions
     const [isSendingTest, setIsSendingTest] = useState(false);
+    const [isSendingNow, setIsSendingNow] = useState(false);
     const [testEmailAddress, setTestEmailAddress] = useState('');
-    const [testSendResult, setTestSendResult] = useState({ message: '', type: '' });
+    const [actionResult, setActionResult] = useState({ message: '', type: '' });
 
     // Helper to update meta fields
     const updateMeta = (key, value) => {
@@ -58,24 +59,55 @@ const CampaignSidebarPlugin = () => {
     // Send test email handler
     const handleSendTest = () => {
         if (!testEmailAddress) {
-            setTestSendResult({ message: 'Please enter a test email address.', type: 'error' });
+            setActionResult({ message: 'Please enter a test email address.', type: 'error' });
             return;
         }
         setIsSendingTest(true);
-        setTestSendResult({ message: '', type: '' });
+        setActionResult({ message: '', type: '' });
 
-        const postId = useSelect((select) => select('core/editor').getCurrentPostId(), []);
+        const postId = select('core/editor').getCurrentPostId();
 
         apiFetch({
             path: `/charitym3/v1/campaigns/${postId}/send-test`,
             method: 'POST',
             data: { email: testEmailAddress },
         }).then((response) => {
-            setTestSendResult({ message: response.message, type: 'success' });
+            setActionResult({ message: response.message, type: 'success' });
             setIsSendingTest(false);
         }).catch((error) => {
-            setTestSendResult({ message: error.message || 'Failed to send test email.', type: 'error' });
+            setActionResult({ message: error.message || 'Failed to send test email.', type: 'error' });
             setIsSendingTest(false);
+        });
+    };
+
+    // Send Now handler
+    const handleSendNow = () => {
+        if (!window.confirm(__('Are you sure you want to send this campaign to all subscribers immediately? This action cannot be undone.', 'charity-m3'))) {
+            return;
+        }
+
+        setIsSendingNow(true);
+        setActionResult({ message: '', type: '' });
+        const postId = useSelect((select) => select('core/editor').getCurrentPostId(), []);
+
+        // Save the post first to ensure we send the latest content
+        savePost().then(() => {
+            apiFetch({
+                path: `/charitym3/v1/campaigns/${postId}/send-now`,
+                method: 'POST',
+            }).then((response) => {
+                setActionResult({ message: response.message, type: 'success' });
+                // Refresh post data to get new status ('sending')
+                dispatch('core/editor').refreshPost();
+            }).catch((error) => {
+                setActionResult({ message: error.message || 'Failed to start sending campaign.', type: 'error' });
+            }).finally(() => {
+                setIsSendingNow(false);
+            });
+        }).catch(() => {
+            // Handle save error
+            setActionResult({ message: 'Could not save post before sending. Please save manually and try again.', type: 'error' });
+            setIsSendingNow(false);
         });
     };
 
@@ -86,6 +118,7 @@ const CampaignSidebarPlugin = () => {
 
     const campaignStatus = campaignMeta[`${META_PREFIX}status`] || 'draft';
     const scheduledAt = campaignMeta[`${META_PREFIX}scheduled_at`];
+    const isSentOrSending = ['sending', 'sent'].includes(campaignStatus);
 
     return (
         <>
@@ -102,6 +135,7 @@ const CampaignSidebarPlugin = () => {
                         value={campaignMeta[`${META_PREFIX}subject`] || ''}
                         onChange={(val) => updateMeta('subject', val)}
                         help={__('The subject line of the email campaign.', 'charity-m3')}
+                        disabled={isSentOrSending}
                     />
                     <TextareaControl
                         label={__('Preheader Text', 'charity-m3')}
@@ -109,34 +143,48 @@ const CampaignSidebarPlugin = () => {
                         onChange={(val) => updateMeta('preheader_text', val)}
                         help={__('A short summary text that follows the subject line when an email is viewed in the inbox.', 'charity-m3')}
                         rows={3}
+                        disabled={isSentOrSending}
                     />
                 </PanelBody>
 
-                <PanelBody title={__('Status & Scheduling', 'charity-m3')}>
+                <PanelBody title={__('Status & Actions', 'charity-m3')}>
                      <SelectControl
                         label={__('Status', 'charity-m3')}
                         value={campaignStatus}
                         options={[
                             { label: 'Draft', value: 'draft' },
                             { label: 'Scheduled', value: 'scheduled' },
-                            // 'Sending' and 'Sent' are set by the system
                             { label: 'Sending', value: 'sending', disabled: true },
                             { label: 'Sent', value: 'sent', disabled: true },
                             { label: 'Archived', value: 'archived' },
                         ]}
                         onChange={(val) => updateMeta('status', val)}
+                        disabled={isSentOrSending}
                     />
                     {campaignStatus === 'scheduled' && (
-                        <div>
+                        <div style={{ marginTop: '1rem' }}>
                             <p><strong>{__('Scheduled For:', 'charity-m3')}</strong></p>
                             <DateTimePicker
                                 currentDate={scheduledAt}
                                 onChange={(val) => updateMeta('scheduled_at', val)}
                                 is12Hour={true}
+                                disabled={isSentOrSending}
                             />
                         </div>
                     )}
-                    {/* Add a "Send Now" button here if desired */}
+                    <div style={{ marginTop: '1rem' }}>
+                        <Button
+                            variant="primary"
+                            onClick={handleSendNow}
+                            isBusy={isSendingNow}
+                            disabled={isSendingNow || isSaving || isSentOrSending}
+                        >
+                            {__('Send Now', 'charity-m3')}
+                        </Button>
+                        <p className="components-form-token-field__help">
+                            {__('This will start sending the campaign to all subscribers immediately.', 'charity-m3')}
+                        </p>
+                    </div>
                 </PanelBody>
 
                 <PanelBody title={__('Testing', 'charity-m3')}>
@@ -154,10 +202,14 @@ const CampaignSidebarPlugin = () => {
                     >
                         {__('Send Test', 'charity-m3')}
                     </Button>
+                </PanelBody>
+
+                {/* Global feedback area */}
+                <PanelBody>
                     {isSaving && <p><Spinner /> {__('Saving post...', 'charity-m3')}</p>}
-                    {testSendResult.message && (
-                        <p style={{ color: testSendResult.type === 'error' ? 'red' : 'green', marginTop: '10px' }}>
-                            {testSendResult.message}
+                    {actionResult.message && (
+                        <p style={{ color: actionResult.type === 'error' ? 'red' : 'green' }}>
+                            {actionResult.message}
                         </p>
                     )}
                 </PanelBody>
