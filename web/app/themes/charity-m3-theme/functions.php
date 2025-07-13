@@ -52,7 +52,8 @@ if (! class_exists(\Roots\Acorn\Application::class)) {
                     \App\Providers\BlocksServiceProvider::class,
                     \App\Providers\DonationServiceProvider::class,
                     \App\Providers\AnalyticsServiceProvider::class,
-                    \App\Providers\BlockPatternsServiceProvider::class, // Add this line
+                    \App\Providers\BlockPatternsServiceProvider::class,
+                    \App\Providers\GraphQLServiceProvider::class,
                 ])
                 ->boot();
         } catch (\Exception $e) {

@@ -7,6 +7,10 @@
   @stack('page-styles')
 </head>
 <body @php(body_class())>
+  <a class="sr-only focus:not-sr-only" href="#main">
+    {{ __('Skip to content') }}
+  </a>
+
   @php(wp_body_open())
 
   <div id="app" class="flex flex-col min-h-screen">
