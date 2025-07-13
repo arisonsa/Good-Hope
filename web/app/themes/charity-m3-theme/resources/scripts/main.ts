@@ -16,6 +16,10 @@ import './components/charity-cta-banner'; // Registers <charity-cta-banner>
 import './components/charity-button'; // Registers <charity-button>
 import './components/charity-donation-form'; // Registers <charity-donation-form>
 import './components/charity-carousel'; // Registers <charity-carousel>
+import './components/charity-counter'; // Registers <charity-counter>
+import './components/charity-testimonial'; // Registers <charity-testimonial>
+import './components/mobile-nav-toggle'; // Registers <mobile-nav-toggle>
+import './components/analytics-dashboard'; // Registers <analytics-dashboard>
 
 // Example:
 

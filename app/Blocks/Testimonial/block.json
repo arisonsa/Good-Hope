@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "charity-m3/testimonial",
+  "title": "Testimonial / Quote (M3)",
+  "category": "charity-m3-components",
+  "description": "Displays a quote or testimonial with attribution.",
+  "keywords": ["testimonial", "quote", "m3", "charity"],
+  "icon": "format-quote",
+  "textdomain": "charity-m3",
+  "attributes": {
+    "quote": {
+      "type": "string",
+      "source": "html",
+      "selector": "blockquote"
+    },
+    "authorName": {
+      "type": "string",
+      "default": ""
+    },
+    "authorTitle": {
+      "type": "string",
+      "default": ""
+    },
+    "authorImageId": {
+      "type": "number"
+    },
+    "authorImageUrl": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  },
+  "editorScript": "charity-m3-testimonial-editor-script"
+}
