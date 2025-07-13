@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "charity-m3/impact-stat",
+  "title": "Impact Stat / Counter",
+  "category": "charity-m3-components",
+  "description": "Displays a single, animated number to highlight an impactful statistic.",
+  "keywords": ["stat", "counter", "number", "impact", "m3"],
+  "icon": "chart-line",
+  "textdomain": "charity-m3",
+  "attributes": {
+    "value": {
+      "type": "number",
+      "default": 1000
+    },
+    "prefix": {
+      "type": "string",
+      "default": ""
+    },
+    "suffix": {
+      "type": "string",
+      "default": ""
+    },
+    "description": {
+      "type": "string",
+      "source": "html",
+      "selector": ".stat-description",
+      "default": "Statistic Description"
+    },
+    "icon": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": false
+  },
+  "editorScript": "charity-m3-impact-stat-editor-script"
+}

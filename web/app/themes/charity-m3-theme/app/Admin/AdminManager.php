@@ -30,6 +30,9 @@ class AdminManager
         add_action('admin_menu', [$this, 'registerAdminPages']);
         add_action('wp_dashboard_setup', [$this, 'addDashboardWidgets']);
 
+        // Hook to enqueue scripts for our custom admin pages
+        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminPageScripts']);
+
 
         // Customize Newsletter Campaign CPT list table
         add_filter('manage_newsletter_campaign_posts_columns', [$this, 'setNewsletterCampaignColumns']);
@@ -37,6 +40,24 @@ class AdminManager
         add_filter('manage_edit-newsletter_campaign_sortable_columns', [$this, 'setNewsletterCampaignSortableColumns']);
         // Add action for filtering (if we add a status filter dropdown)
         // add_action('restrict_manage_posts', [$this, 'addNewsletterCampaignStatusFilter']);
+    }
+
+    public function enqueueAdminPageScripts($hook_suffix)
+    {
+        // Our top-level page hook is 'toplevel_page_charity-m3-analytics'
+        // Submenu page hooks are like 'newsletter_page_charity-m3-donations'
+        if ($hook_suffix === 'toplevel_page_charity-m3-analytics') {
+            $dashboard_asset = \Roots\asset('scripts/admin/analytics-dashboard.js');
+            if ($dashboard_asset->exists()) {
+                wp_enqueue_script(
+                    'charity-m3-analytics-dashboard-script',
+                    $dashboard_asset->uri(),
+                    ['wp-api-fetch'], // Dependency for apiFetch
+                    $dashboard_asset->version(),
+                    true
+                );
+            }
+        }
     }
 
     public function addDashboardWidgets()
@@ -126,6 +147,17 @@ class AdminManager
 
     public function registerAdminPages()
     {
+        // Add top-level Analytics Dashboard page
+        add_menu_page(
+            __('Analytics Dashboard', 'charity-m3'),
+            __('Analytics', 'charity-m3'),
+            'manage_options', // Capability
+            'charity-m3-analytics', // Menu slug
+            [$this, 'renderAnalyticsDashboardPage'],
+            'dashicons-chart-area', // Icon
+            25 // Position
+        );
+
         // The main "Newsletter" menu page will be handled by the CPT registration itself
         // if we set 'show_in_menu' => true for the CPT.
         // The CPT 'menu_name' was "Newsletter".
@@ -358,6 +390,15 @@ class AdminManager
     public function renderAnalyticsPage()
     {
         echo '<div class="wrap"><h1>' . esc_html__('Newsletter Analytics', 'charity-m3') . '</h1><p>Coming soon...</p></div>';
+    }
+
+    public function renderAnalyticsDashboardPage()
+    {
+        // This page will be the mount point for our Lit/StyleXJS dashboard component.
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__('Analytics Dashboard', 'charity-m3') . '</h1>';
+        echo '<div id="analytics-dashboard-root"></div>'; // Lit component will mount here
+        echo '</div>';
     }
 
     public function renderDonationsPage()

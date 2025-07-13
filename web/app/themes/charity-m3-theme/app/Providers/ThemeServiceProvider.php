@@ -19,6 +19,45 @@ class ThemeServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register sidebars (widget areas).
+     */
+    protected function registerSidebars()
+    {
+        register_sidebar([
+            'name'          => __('Footer Column 1', 'charity-m3'),
+            'id'            => 'footer-1',
+            'before_widget' => '<div class="widget %1$s %2$s">',
+            'after_widget'  => '</div>',
+            'before_title'  => '<h4 class="widget-title md-typescale-title-small">',
+            'after_title'   => '</h4>',
+        ]);
+        register_sidebar([
+            'name'          => __('Footer Column 2', 'charity-m3'),
+            'id'            => 'footer-2',
+            'before_widget' => '<div class="widget %1$s %2$s">',
+            'after_widget'  => '</div>',
+            'before_title'  => '<h4 class="widget-title md-typescale-title-small">',
+            'after_title'   => '</h4>',
+        ]);
+        register_sidebar([
+            'name'          => __('Footer Column 3', 'charity-m3'),
+            'id'            => 'footer-3',
+            'before_widget' => '<div class="widget %1$s %2$s">',
+            'after_widget'  => '</div>',
+            'before_title'  => '<h4 class="widget-title md-typescale-title-small">',
+            'after_title'   => '</h4>',
+        ]);
+        register_sidebar([
+            'name'          => __('Footer Copyright', 'charity-m3'),
+            'id'            => 'footer-copyright',
+            'before_widget' => '<div class="widget %1$s %2$s">',
+            'after_widget'  => '</div>',
+            'before_title'  => '<h4 class="widget-title screen-reader-text">',
+            'after_title'   => '</h4>',
+        ]);
+    }
+
+    /**
      * Bootstrap any application services.
      *
      * @return void
@@ -42,6 +81,7 @@ class ThemeServiceProvider extends ServiceProvider
         $this->addThemeSupports();
         $this->registerNavMenus();
         $this->addImageSizes();
+        $this->registerSidebars(); // Add this call
 
         // Enqueue assets (can be done here or via a dedicated Assets service)
         add_action('wp_enqueue_scripts', [$this, 'enqueueThemeAssets']);
