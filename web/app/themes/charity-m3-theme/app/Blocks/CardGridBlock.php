@@ -16,20 +16,20 @@ class CardGridBlock
 
     public function registerBlock()
     {
-        // Register editor script handle (matches block.json and webpack output)
+        // Register editor script handle (matches block.json)
         $editor_script_handle = 'charity-m3-card-grid-editor-script';
-        $editor_asset_path = \Roots\asset('scripts/blocks/card-grid-editor.js'); // Ensure this path matches webpack output
+        $editor_asset_uri = \App\Vite::uri('app/Blocks/CardGrid/edit.js');
 
-        if ($editor_asset_path->exists()) {
+        if ($editor_asset_uri) {
             wp_register_script(
                 $editor_script_handle,
-                $editor_asset_path->uri(),
+                $editor_asset_uri,
                 ['wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n', 'wp-polyfill'],
-                $editor_asset_path->version(),
+                false,
                 true
             );
         } elseif (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("Card Grid editor script not found at: " . $editor_asset_path->path());
+            error_log("Card Grid editor script not found for Vite.");
         }
 
         register_block_type_from_metadata(

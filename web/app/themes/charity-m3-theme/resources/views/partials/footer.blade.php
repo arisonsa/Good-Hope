@@ -1,24 +1,24 @@
-<footer class="content-info bg-surface-container text-on-surface-container p-8 md:p-12 mt-auto">
-  <div class="container mx-auto">
-    <div class="footer-widgets grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+<footer class="content-info">
+  <div class="footer-container">
+    <div class="footer-widgets">
       @if (is_active_sidebar('footer-1'))
-        <div class="footer-widget-col">
+        <div class="footer-widget-col footer-widget-col-1">
           @php(dynamic_sidebar('footer-1'))
         </div>
       @endif
       @if (is_active_sidebar('footer-2'))
-        <div class="footer-widget-col">
+        <div class="footer-widget-col footer-widget-col-2">
           @php(dynamic_sidebar('footer-2'))
         </div>
       @endif
       @if (is_active_sidebar('footer-3'))
-        <div class="footer-widget-col">
+        <div class="footer-widget-col footer-widget-col-3">
           @php(dynamic_sidebar('footer-3'))
         </div>
       @endif
     </div>
 
-    <div class="footer-copyright border-t border-outline pt-8 text-center text-on-surface-variant">
+    <div class="footer-copyright">
       @if (is_active_sidebar('footer-copyright'))
           @php(dynamic_sidebar('footer-copyright'))
       @else

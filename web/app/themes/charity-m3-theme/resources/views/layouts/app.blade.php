@@ -13,10 +13,10 @@
 
   @php(wp_body_open())
 
-  <div id="app" class="flex flex-col min-h-screen">
-    @include('partials.header') {{-- Consider making header/footer more configurable via props or slots for landing pages --}}
+  <div id="app">
+    @include('partials.header')
 
-    <main id="main" class="main @yield('main-class', 'py-8') flex-grow"> {{-- Allow overriding main class --}}
+    <main id="main" class="main">
       @yield('content')
     </main>
 

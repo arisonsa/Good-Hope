@@ -4,7 +4,8 @@ namespace App\Providers;
 
 use Roots\Acorn\ServiceProvider;
 use App\View\Composers\AppComposer;
-use App\Theme\CustomizerManager; // Add this
+use App\Theme\CustomizerManager;
+use App\Vite; // Add this
 
 class ThemeServiceProvider extends ServiceProvider
 {
@@ -19,53 +20,16 @@ class ThemeServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register sidebars (widget areas).
-     */
-    protected function registerSidebars()
-    {
-        register_sidebar([
-            'name'          => __('Footer Column 1', 'charity-m3'),
-            'id'            => 'footer-1',
-            'before_widget' => '<div class="widget %1$s %2$s">',
-            'after_widget'  => '</div>',
-            'before_title'  => '<h4 class="widget-title md-typescale-title-small">',
-            'after_title'   => '</h4>',
-        ]);
-        register_sidebar([
-            'name'          => __('Footer Column 2', 'charity-m3'),
-            'id'            => 'footer-2',
-            'before_widget' => '<div class="widget %1$s %2$s">',
-            'after_widget'  => '</div>',
-            'before_title'  => '<h4 class="widget-title md-typescale-title-small">',
-            'after_title'   => '</h4>',
-        ]);
-        register_sidebar([
-            'name'          => __('Footer Column 3', 'charity-m3'),
-            'id'            => 'footer-3',
-            'before_widget' => '<div class="widget %1$s %2$s">',
-            'after_widget'  => '</div>',
-            'before_title'  => '<h4 class="widget-title md-typescale-title-small">',
-            'after_title'   => '</h4>',
-        ]);
-        register_sidebar([
-            'name'          => __('Footer Copyright', 'charity-m3'),
-            'id'            => 'footer-copyright',
-            'before_widget' => '<div class="widget %1$s %2$s">',
-            'after_widget'  => '</div>',
-            'before_title'  => '<h4 class="widget-title screen-reader-text">',
-            'after_title'   => '</h4>',
-        ]);
-    }
-
-    /**
      * Bootstrap any application services.
      *
      * @return void
      */
     public function boot()
     {
+        // Instantiate our Vite helper
+        new Vite();
+
         // Boot services, add view composers, etc.
-        // Example: Pass site name to all views
         \Roots\Blade::composer('*', AppComposer::class);
 
         // Load text domain
@@ -77,18 +41,13 @@ class ThemeServiceProvider extends ServiceProvider
         add_action('after_switch_theme', [\App\Database\DatabaseManager::class, 'runMigrations']);
 
         // Add theme support, image sizes, nav menus, etc.
-        // (Some of this is in functions.php for now, can be moved here)
         $this->addThemeSupports();
         $this->registerNavMenus();
         $this->addImageSizes();
-        $this->registerSidebars(); // Add this call
+        $this->registerSidebars();
 
-        // Enqueue assets (can be done here or via a dedicated Assets service)
+        // Enqueue assets using the new Vite helper
         add_action('wp_enqueue_scripts', [$this, 'enqueueThemeAssets']);
-
-        // Register custom post types and taxonomies if any
-        // add_action('init', [$this, 'registerPostTypes']);
-        // add_action('init', [$this, 'registerTaxonomies']);
 
         // Add Google Fonts for Material Symbols and Roboto
         add_action('wp_head', [$this, 'addGoogleFonts']);
@@ -185,41 +144,24 @@ class ThemeServiceProvider extends ServiceProvider
      */
     public function enqueueThemeAssets()
     {
-        // Main stylesheet (style.css)
-        wp_enqueue_style(
-            'charity-m3-main',
-            \Roots\asset('styles/main.css')->uri(), // Assumes you have a main.css in resources/styles built by a bundler
-            false,
-            null // Version will be handled by asset pipeline if configured
-        );
+        // Output the Vite HMR client script in development
+        if ($hmr_script = Vite::hmrScript()) {
+            echo $hmr_script;
+        }
 
-        // Main JavaScript
-        wp_enqueue_script(
-            'charity-m3-main',
-            \Roots\asset('scripts/main.js')->uri(), // Assumes you have a main.js in resources/scripts built by a bundler
-            ['jquery'], // Dependencies
-            null, // Version
-            true // In footer
-        );
+        // Enqueue main stylesheet and script from Vite manifest
+        wp_enqueue_style('charity-m3-main-style', Vite::uri('resources/styles/main.scss'), [], null);
+        wp_enqueue_script('charity-m3-main-script', Vite::uri('resources/scripts/main.ts'), ['wp-api-fetch'], null, true);
+
+        // Localize script with data needed by frontend components
+        wp_localize_script('charity-m3-main-script', 'charityM3', [
+            'stripePublicKey' => getenv('STRIPE_PUBLISHABLE_KEY') ?: '',
+        ]);
 
         // Comment reply script
         if (is_singular() && comments_open() && get_option('thread_comments')) {
             wp_enqueue_script('comment-reply');
         }
-
-        // Localize script with data needed by frontend components
-        // The handle 'charity-m3-main' must match the one used in wp_enqueue_script
-        wp_localize_script('charity-m3-main', 'charityM3', [
-            'stripePublicKey' => getenv('STRIPE_PUBLISHABLE_KEY') ?: '',
-            // Add other global data if needed
-        ]);
-
-        // wp_localize_script for wpApiSettings is usually handled by WordPress core
-        // when a script is enqueued with 'wp-api-fetch' as a dependency, but let's ensure it's there.
-        // If not, we could add it manually, but it's better to rely on WP's handling.
-        // Our REST API endpoint uses permission_callback and nonce checks, so 'wp-api-fetch' should be a dependency
-        // for any script making such calls, or the nonce needs to be passed.
-        // The Lit component currently assumes `window.wpApiSettings.nonce` exists.
     }
 
     // Placeholder for CPTs and Taxonomies
