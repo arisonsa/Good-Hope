@@ -135,7 +135,8 @@ class ThemeServiceProvider extends ServiceProvider
      */
     protected function addImageSizes()
     {
-        // add_image_size('large_thumbnail', 700, 500, true);
+        add_image_size('card-thumbnail', 600, 400, true); // For our 3-column card grid
+        add_image_size('hero-large', 1920, 1080, true); // For full-width hero sections
     }
 
     /**

@@ -6,7 +6,7 @@
   @while(have_posts()) @php(the_post())
     <x-m3.hero
       :title="get_the_title()"
-      :background-image="has_post_thumbnail() ? get_the_post_thumbnail_url(null, 'large') : 'https://picsum.photos/seed/' . get_the_ID() . '/1920/1080'"
+      :background-image="has_post_thumbnail() ? get_the_post_thumbnail_url(null, 'hero-large') : \App\Vite::uri('resources/images/placeholders/placeholder-16x9.jpg')"
       :show-overlay="true"
       text-color="var(--md-sys-color-on-primary)"
       min-height="50vh"

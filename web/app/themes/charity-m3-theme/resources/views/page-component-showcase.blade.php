@@ -16,21 +16,21 @@
         [
             'title' => __('Our Mission', 'charity-m3'),
             'subtitle' => __('What We Do', 'charity-m3'),
-            'imageUrl' => 'https://picsum.photos/seed/mission/600/400', // Placeholder
+            'imageUrl' => \App\Vite::uri('resources/images/placeholders/placeholder-16x9.jpg'),
             'text' => __('Dedicated to providing aid and relief to communities in need worldwide through sustainable programs.', 'charity-m3'),
             'actions' => [['text' => __('Read More', 'charity-m3'), 'href' => '#mission-detail', 'type' => 'text']]
         ],
         [
             'title' => __('Recent Projects', 'charity-m3'),
             'subtitle' => __('Impact Stories', 'charity-m3'),
-            'imageUrl' => 'https://picsum.photos/seed/projects/600/400', // Placeholder
+            'imageUrl' => \App\Vite::uri('resources/images/placeholders/placeholder-16x9.jpg'),
             'text' => __('Discover the real impact of our recent projects and the lives we\'ve touched together with your support.', 'charity-m3'),
             'actions' => [['text' => __('View Projects', 'charity-m3'), 'href' => '#projects-detail', 'type' => 'text']]
         ],
         [
             'title' => __('Get Involved', 'charity-m3'),
             'subtitle' => __('Join Our Cause', 'charity-m3'),
-            'imageUrl' => 'https://picsum.photos/seed/involved/600/400', // Placeholder
+            'imageUrl' => \App\Vite::uri('resources/images/placeholders/placeholder-16x9.jpg'),
             'text' => __('There are many ways you can contribute to our cause, from volunteering to donations and advocacy.', 'charity-m3'),
             'actions' => [['text' => __('Ways to Help', 'charity-m3'), 'href' => '#involved-detail', 'type' => 'text']]
         ]
@@ -46,7 +46,7 @@
   <x-m3.hero
       title="{{ __('Empowering Communities, Changing Lives', 'charity-m3') }}"
       subtitle="{{ __('Join us in our mission to bring hope and sustainable solutions to those who need it most. Your support makes a world of difference.', 'charity-m3') }}"
-      background-image="https://picsum.photos/seed/hero-showcase/1920/1080"
+      background-image="{{ \App\Vite::uri('resources/images/placeholders/placeholder-16x9.jpg') }}"
       :show-overlay="true"
       text-color="var(--md-sys-color-on-primary)" {{-- Assuming dark image, light text --}}
       :buttons="$heroButtons"

@@ -18,7 +18,7 @@
   $card_data = [
       'title' => get_the_title(),
       'subtitle' => $subtitle_context,
-      'imageUrl' => has_post_thumbnail() ? get_the_post_thumbnail_url(get_the_ID(), 'medium_large') : 'https://picsum.photos/seed/' . get_the_ID() . '/600/400', // Placeholder
+      'imageUrl' => has_post_thumbnail() ? get_the_post_thumbnail_url(get_the_ID(), 'card-thumbnail') : \App\Vite::uri('resources/images/placeholders/placeholder-16x9.jpg'), // Use specific image size
       'imageAlt' => has_post_thumbnail() ? get_the_post_thumbnail_caption() ?: get_the_title() : get_the_title(),
       'href' => get_permalink(),
       'variant' => 'outlined',

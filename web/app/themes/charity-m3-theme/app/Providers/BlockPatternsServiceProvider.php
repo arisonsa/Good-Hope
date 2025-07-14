@@ -66,15 +66,15 @@ class BlockPatternsServiceProvider extends ServiceProvider
         <!-- /wp:paragraph -->
 
         <!-- wp:charity-m3/card-grid {"cols":"3","gap":"6","align":"wide"} -->
-        <!-- wp:charity-m3/card-item {"title":"Health Services","subtitle":"Well-being for All","text":"Providing access to essential health services, from emergency medical care to long-term health system strengthening.","imageUrl":"https://picsum.photos/seed/health/600/400","href":"#","variant":"elevated","interactive":true,"button1Text":"Learn More","button1Href":"#"} -->
+        <!-- wp:charity-m3/card-item {"title":"Health Services","subtitle":"Well-being for All","text":"Providing access to essential health services, from emergency medical care to long-term health system strengthening.","imageUrl":"<?php echo esc_url(\App\Vite::uri('resources/images/placeholders/placeholder-16x9.jpg')); ?>","href":"#","variant":"elevated","interactive":true,"button1Text":"Learn More","button1Href":"#"} -->
         <div class="wp-block-charity-m3-card-item"></div>
         <!-- /wp:charity-m3/card-item -->
 
-        <!-- wp:charity-m3/card-item {"title":"Emergency Response","subtitle":"Ready to Act","text":"Our teams are ready to deploy at a moment's notice, providing life-saving aid in the wake of disasters.","imageUrl":"https://picsum.photos/seed/emergency/600/400","href":"#","variant":"elevated","interactive":true,"button1Text":"Learn More","button1Href":"#"} -->
+        <!-- wp:charity-m3/card-item {"title":"Emergency Response","subtitle":"Ready to Act","text":"Our teams are ready to deploy at a moment's notice, providing life-saving aid in the wake of disasters.","imageUrl":"<?php echo esc_url(\App\Vite::uri('resources/images/placeholders/placeholder-16x9.jpg')); ?>","href":"#","variant":"elevated","interactive":true,"button1Text":"Learn More","button1Href":"#"} -->
         <div class="wp-block-charity-m3-card-item"></div>
         <!-- /wp:charity-m3/card-item -->
 
-        <!-- wp:charity-m3/card-item {"title":"Community Development","subtitle":"Building Resilience","text":"We partner with communities to build local capacity and create sustainable solutions for long-term well-being.","imageUrl":"https://picsum.photos/seed/community/600/400","href":"#","variant":"elevated","interactive":true,"button1Text":"Learn More","button1Href":"#"} -->
+        <!-- wp:charity-m3/card-item {"title":"Community Development","subtitle":"Building Resilience","text":"We partner with communities to build local capacity and create sustainable solutions for long-term well-being.","imageUrl":"<?php echo esc_url(\App\Vite::uri('resources/images/placeholders/placeholder-16x9.jpg')); ?>","href":"#","variant":"elevated","interactive":true,"button1Text":"Learn More","button1Href":"#"} -->
         <div class="wp-block-charity-m3-card-item"></div>
         <!-- /wp:charity-m3/card-item -->
         <!-- /wp:charity-m3/card-grid -->
