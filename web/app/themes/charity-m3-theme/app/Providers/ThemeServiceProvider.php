@@ -139,6 +139,42 @@ class ThemeServiceProvider extends ServiceProvider
         add_image_size('hero-large', 1920, 1080, true); // For full-width hero sections
     }
 
+    protected function registerSidebars()
+    {
+        register_sidebar([
+            'name'          => __('Footer Column 1', 'charity-m3'),
+            'id'            => 'footer-col-1',
+            'before_widget' => '<div class="widget %1$s %2$s">',
+            'after_widget'  => '</div>',
+            'before_title'  => '<h4 class="widget-title">',
+            'after_title'   => '</h4>',
+        ]);
+        register_sidebar([
+            'name'          => __('Footer Column 2', 'charity-m3'),
+            'id'            => 'footer-col-2',
+            'before_widget' => '<div class="widget %1$s %2$s">',
+            'after_widget'  => '</div>',
+            'before_title'  => '<h4 class="widget-title">',
+            'after_title'   => '</h4>',
+        ]);
+        register_sidebar([
+            'name'          => __('Footer Column 3', 'charity-m3'),
+            'id'            => 'footer-col-3',
+            'before_widget' => '<div class="widget %1$s %2$s">',
+            'after_widget'  => '</div>',
+            'before_title'  => '<h4 class="widget-title">',
+            'after_title'   => '</h4>',
+        ]);
+        register_sidebar([
+            'name'          => __('Footer Column 4', 'charity-m3'),
+            'id'            => 'footer-col-4',
+            'before_widget' => '<div class="widget %1$s %2$s">',
+            'after_widget'  => '</div>',
+            'before_title'  => '<h4 class="widget-title">',
+            'after_title'   => '</h4>',
+        ]);
+    }
+
     /**
      * Enqueue theme assets.
      * This is a basic example. A more robust solution might use Acorn's asset management.
