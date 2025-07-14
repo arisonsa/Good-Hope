@@ -21,9 +21,13 @@
       </nav>
     @endif
 
-    {{-- Mobile Navigation Toggle --}}
-    <div class="mobile-nav-toggle-wrapper">
-      <mobile-nav-toggle></mobile-nav-toggle>
+    <div class="flex items-center gap-4">
+        <donate-dropdown-button></donate-dropdown-button>
+
+        {{-- Mobile Navigation Toggle --}}
+        <div class="mobile-nav-toggle-wrapper">
+          <mobile-nav-toggle></mobile-nav-toggle>
+        </div>
     </div>
   </div>
 

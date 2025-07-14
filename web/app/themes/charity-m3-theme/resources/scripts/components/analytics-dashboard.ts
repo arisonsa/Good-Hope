@@ -40,11 +40,13 @@ const styles = stylex.create({
 export class AnalyticsDashboard extends LitElement {
     @state() private donationsData: any = null;
     @state() private subscribersData: any = null;
+    @state() private earmarkData: any = null;
     @state() private isLoading = true;
     @state() private errorMessage = '';
 
     private donationsChartInstance?: Chart;
     private subscribersChartInstance?: Chart;
+    private earmarkChartInstance?: Chart;
 
     // Use Light DOM for easier Chart.js canvas interaction and global M3 styling
     createRenderRoot() {
@@ -60,12 +62,14 @@ export class AnalyticsDashboard extends LitElement {
         this.isLoading = true;
         this.errorMessage = '';
         try {
-            const [donations, subscribers] = await Promise.all([
+            const [donations, subscribers, donationStats] = await Promise.all([
                 apiFetch({ path: '/charitym3/v1/stats/donations-over-time?period=day&limit=30' }),
                 apiFetch({ path: '/charitym3/v1/stats/subscribers-over-time?period=day&limit=30' }),
+                apiFetch({ path: '/charitym3/v1/stats/donations?days=30' }),
             ]);
             this.donationsData = this.formatChartData(donations, 'Donations', 'total_amount');
             this.subscribersData = this.formatChartData(subscribers, 'New Subscribers', 'total_subscribers');
+            this.earmarkData = this.formatPieChartData(donationStats.earmark_breakdown, 'Earmark Breakdown', 'total_amount', 'earmark');
         } catch (error: any) {
             this.errorMessage = error.message || 'Failed to fetch analytics data.';
         } finally {
@@ -90,12 +94,38 @@ export class AnalyticsDashboard extends LitElement {
         };
     }
 
+    formatPieChartData(data: any[], label: string, dataKey: string, labelKey: string) {
+        if (!data) return null;
+        const labels = data.map(item => item[labelKey]);
+        const values = data.map(item => item[dataKey]);
+        return {
+            labels,
+            datasets: [{
+                label,
+                data: values,
+                backgroundColor: [
+                    M3SysColors.primary,
+                    M3SysColors.secondary,
+                    M3SysColors.tertiary,
+                    M3SysColors.error,
+                    '#FFC107',
+                    '#4CAF50',
+                    '#2196F3',
+                ],
+                hoverOffset: 4,
+            }],
+        };
+    }
+
     updated(changedProperties: Map<string | number | symbol, unknown>) {
         if (changedProperties.has('donationsData') && this.donationsData) {
             this.createDonationsChart();
         }
         if (changedProperties.has('subscribersData') && this.subscribersData) {
             this.createSubscribersChart();
+        }
+        if (changedProperties.has('earmarkData') && this.earmarkData) {
+            this.createEarmarkChart();
         }
     }
 
@@ -131,6 +161,25 @@ export class AnalyticsDashboard extends LitElement {
         });
     }
 
+    private createEarmarkChart() {
+        const canvas = this.querySelector('#earmarkChart') as HTMLCanvasElement;
+        if (!canvas || !this.earmarkData) return;
+        if (this.earmarkChartInstance) this.earmarkChartInstance.destroy();
+
+        this.earmarkChartInstance = new Chart(canvas, {
+            type: 'pie',
+            data: this.earmarkData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                },
+            },
+        });
+    }
+
     render() {
         if (this.isLoading) {
             return html`<div ${stylex.props(styles.loadingState)}>Loading Analytics...</div>`;
@@ -148,6 +197,10 @@ export class AnalyticsDashboard extends LitElement {
                 <div class="subscribers-chart-card" ${stylex.props(styles.chartCard)}>
                     <h2 ${stylex.props(styles.chartTitle)}>New Subscribers (Last 30 Days)</h2>
                     <canvas id="subscribersChart"></canvas>
+                </div>
+                <div class="earmark-chart-card" ${stylex.props(styles.chartCard)}>
+                    <h2 ${stylex.props(styles.chartTitle)}>Earmark Breakdown (Last 30 Days)</h2>
+                    <canvas id="earmarkChart"></canvas>
                 </div>
             </div>
         `;

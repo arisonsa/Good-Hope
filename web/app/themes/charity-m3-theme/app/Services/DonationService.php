@@ -65,13 +65,16 @@
                     'donor_id'    => get_current_user_id() ?: null,
                     'donor_name'  => $metadata['donor_name'] ?? null,
                     'donor_email' => $donorEmail,
+                'on_behalf_of' => $metadata['on_behalf_of'] ?? null,
                     'amount'      => $amount,
                     'currency'    => $currency,
                     'frequency'   => 'one-time',
                     'status'      => 'succeeded',
                     'gateway'     => 'stripe',
+                'payment_method_type' => $paymentIntent->payment_method_types[0] ?? 'card',
                     'gateway_transaction_id' => $paymentIntent->id,
                     'campaign_id' => $metadata['campaign_id'] ?? null,
+                'earmark' => $metadata['earmark'] ?? null,
                 ];
                 return $this->createDonationRecord($donation_data);
             } else {
@@ -99,15 +102,18 @@
                     'donor_id'    => get_current_user_id() ?: null,
                     'donor_name'  => $metadata['donor_name'] ?? null,
                     'donor_email' => $donorEmail,
+                'on_behalf_of' => $metadata['on_behalf_of'] ?? null,
                     'amount'      => $amount,
                     'currency'    => $currency,
                     'frequency'   => 'monthly',
                     'status'      => 'succeeded', // For the initial payment
                     'gateway'     => 'stripe',
+                'payment_method_type' => $payment_intent->payment_method_types[0] ?? 'card',
                     'gateway_transaction_id' => $payment_intent->id,
                     'stripe_customer_id' => $customer->id,
                     'stripe_subscription_id' => $subscription->id,
                     'campaign_id' => $metadata['campaign_id'] ?? null,
+                'earmark' => $metadata['earmark'] ?? null,
                 ];
                 return $this->createDonationRecord($donation_data);
             } else {
@@ -170,6 +176,96 @@
         {
             return $this->db->get_row($this->db->prepare("SELECT * FROM {$this->table_name} WHERE stripe_subscription_id = %s ORDER BY id ASC LIMIT 1", $subscription_id));
         }
+
+        public function findOrCreateStripeCustomer(string $email, ?string $name, string $paymentMethodId = null)
+        {
+            $existing_customers = \Stripe\Customer::all(['email' => $email, 'limit' => 1]);
+            if (!empty($existing_customers->data)) {
+                $customer = $existing_customers->data[0];
+                if ($paymentMethodId) {
+                    \Stripe\PaymentMethod::attach($paymentMethodId, ['customer' => $customer->id]);
+                    \Stripe\Customer::update($customer->id, ['invoice_settings' => ['default_payment_method' => $paymentMethodId]]);
+                }
+                return $customer;
+            }
+
+            $params = [
+                'email' => $email,
+                'name' => $name,
+            ];
+
+            if ($paymentMethodId) {
+                $params['payment_method'] = $paymentMethodId;
+                $params['invoice_settings'] = ['default_payment_method' => $paymentMethodId];
+            }
+
+            return \Stripe\Customer::create($params);
+        }
+
+        public function findOrCreateStripePrice(int $amount, string $currency, string $interval)
+        {
+            $product_id = 'prod_charitym3_monthly_donation'; // A single product for all monthly donations
+
+            try {
+                $product = \Stripe\Product::retrieve($product_id);
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                $product = \Stripe\Product::create(['name' => 'Monthly Donation', 'id' => $product_id, 'type' => 'service']);
+            }
+
+            $prices = \Stripe\Price::all(['product' => $product->id, 'currency' => $currency, 'recurring' => ['interval' => $interval], 'unit_amount' => $amount, 'limit' => 1]);
+            if (!empty($prices->data)) {
+                return $prices->data[0];
+            }
+
+            return \Stripe\Price::create(['product' => $product->id, 'unit_amount' => $amount, 'currency' => $currency, 'recurring' => ['interval' => $interval]]);
+        }
+
+        public function getPaymentIntentStatus(string $paymentIntentId): string
+        {
+            $paymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
+            return $paymentIntent->status;
+        }
+
+    /**
+     * Creates a Payment Intent for use with the Payment Element.
+     *
+     * @param int $amount Amount in cents.
+     * @param string $currency e.g., 'usd'.
+     * @param string $frequency 'one-time' or 'monthly'.
+     * @return string|\WP_Error The client_secret on success, or \WP_Error on failure.
+     */
+    public function createPaymentIntent(int $amount, string $currency, string $frequency = 'one-time', array $metadata = [])
+    {
+        if (empty(getenv('STRIPE_SECRET_KEY'))) {
+            return new \WP_Error('stripe_not_configured', __('Stripe is not configured.', 'charity-m3'));
+        }
+
+        try {
+            $params = [
+                'amount' => $amount,
+                'currency' => $currency,
+                'automatic_payment_methods' => ['enabled' => true],
+                'metadata' => $metadata,
+            ];
+
+            // If this is for a subscription, we need to set up the intent differently
+            if ($frequency === 'monthly') {
+                // For subscriptions, the initial setup might be different.
+                // We might create a customer and an intent with setup_future_usage.
+                // Or, the subscription creation itself will generate the first payment intent.
+                // For Payment Element, we typically create a setup intent for subscriptions
+                // or a payment intent with setup_future_usage.
+                $params['setup_future_usage'] = 'on_session';
+            }
+
+            $paymentIntent = PaymentIntent::create($params);
+
+            return $paymentIntent->client_secret;
+
+        } catch (\Exception $e) {
+            return new \WP_Error('payment_intent_error', $e->getMessage());
+        }
+    }
 
         /**
          * Get donations with pagination, filtering, and sorting.

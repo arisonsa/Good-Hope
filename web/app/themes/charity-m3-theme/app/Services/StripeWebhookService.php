@@ -46,6 +46,9 @@ class StripeWebhookService
 
         // Handle the event
         switch ($event->type) {
+            case 'payment_intent.succeeded':
+                $this->handlePaymentIntentSucceeded($event->data->object);
+                break;
             case 'invoice.payment_succeeded':
                 $this->handleInvoicePaymentSucceeded($event->data->object);
                 break;
@@ -57,6 +60,64 @@ class StripeWebhookService
                 // Unhandled event type
                 error_log('Unhandled Stripe event type: ' . $event->type);
         }
+    }
+
+    protected function handlePaymentIntentSucceeded($paymentIntent)
+    {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'charity_m3_donations';
+        $existing_donation = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name} WHERE gateway_transaction_id = %s", $paymentIntent->id));
+
+        if ($existing_donation) {
+            error_log('Webhook received for already processed PaymentIntent: ' . $paymentIntent->id);
+            return;
+        }
+
+        // The 'invoice' property is set on PaymentIntents created for subscriptions.
+        // If it exists, it will be handled by the 'invoice.payment_succeeded' webhook.
+        if (!empty($paymentIntent->invoice)) {
+            return;
+        }
+
+        $metadata = $paymentIntent->metadata;
+        $charge = $paymentIntent->charges->data[0] ?? null;
+
+        $donation_data = [
+            'donor_email' => $metadata->email ?? $charge->billing_details->email,
+            'donor_name' => $metadata->name ?? $charge->billing_details->name,
+            'on_behalf_of' => $metadata->on_behalf_of ?? null,
+            'earmark' => $metadata->earmark ?? 'general_fund',
+            'amount' => $paymentIntent->amount,
+            'currency' => $paymentIntent->currency,
+            'frequency' => $metadata->frequency ?? 'one-time',
+            'status' => 'succeeded',
+            'gateway' => 'stripe',
+            'payment_method_type' => $charge->payment_method_details->type ?? 'unknown',
+            'gateway_transaction_id' => $paymentIntent->id,
+            'campaign_id' => $metadata->campaign_id ?? null,
+        ];
+
+        // This PI is for a subscription setup, not a one-time payment.
+        if (($metadata->frequency ?? 'one-time') === 'monthly' && $paymentIntent->setup_future_usage) {
+            $customer = $this->donationService->findOrCreateStripeCustomer($donation_data['donor_email'], $donation_data['donor_name'], $paymentIntent->payment_method);
+            $price = $this->donationService->findOrCreateStripePrice($donation_data['amount'], $donation_data['currency'], 'month');
+
+            $subscription = \Stripe\Subscription::create([
+                'customer' => $customer->id,
+                'items' => [['price' => $price->id]],
+                'default_payment_method' => $paymentIntent->payment_method,
+                'metadata' => [
+                    'earmark' => $donation_data['earmark'],
+                    'on_behalf_of' => $donation_data['on_behalf_of'],
+                    'campaign_id' => $donation_data['campaign_id'],
+                ]
+            ]);
+
+            $donation_data['stripe_customer_id'] = $customer->id;
+            $donation_data['stripe_subscription_id'] = $subscription->id;
+        }
+
+        $this->donationService->createDonationRecord($donation_data);
 
         return new \WP_REST_Response(['status' => 'success'], 200);
     }

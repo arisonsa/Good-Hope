@@ -100,6 +100,9 @@ export class CharityDonationForm extends LitElement {
     @state() private customAmountInput = ''; // string to handle decimal input
     @state() private name = '';
     @state() private email = '';
+    @state() private onBehalfOf = '';
+    @state() private earmark = 'general_fund';
+    @state() private earmarkOptions: { id: string; label: string }[] = [];
     @state() private isLoading = false;
     @state() private errorMessage = '';
     @state() private successMessage = '';
@@ -107,126 +110,145 @@ export class CharityDonationForm extends LitElement {
     // --- Stripe related state ---
     private stripe: Stripe | null = null;
     private cardElement?: StripeCardElement;
-    @state() private stripePublicKey = ''; // Will be passed from server
+    @state() private stripePublicKey = '';
+    @state() private clientSecret = '';
+
+    // Stripe Elements instances
+    private stripe: Stripe | null = null;
+    private elements: any; // Stripe Elements instance
 
     constructor() {
         super();
         this.frequency = this.defaultFrequency;
     }
 
-    async firstUpdated() {
-        // Fetch public key from a localized script or data attribute
+    connectedCallback() {
+        super.connectedCallback();
+        this.initializeComponent();
+    }
+
+    private async initializeComponent() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const freqFromUrl = urlParams.get('frequency');
+        if (freqFromUrl === 'monthly' || freqFromUrl === 'one-time') {
+            this.frequency = freqFromUrl;
+        }
+
+        await this.fetchEarmarkOptions();
+
         this.stripePublicKey = window.charityM3?.stripePublicKey || '';
         if (!this.stripePublicKey) {
             this.errorMessage = 'Stripe is not configured correctly.';
             return;
         }
-
         this.stripe = await loadStripe(this.stripePublicKey);
-        if (!this.stripe) {
-            this.errorMessage = 'Failed to load payment gateway.';
+    }
+
+    async fetchEarmarkOptions() {
+        try {
+            const options = await apiFetch({ path: '/charitym3/v1/earmark-options' });
+            if (Array.isArray(options)) {
+                this.earmarkOptions = options;
+            }
+        } catch (error) {
+            console.error('Failed to fetch earmark options:', error);
+        }
+    }
+
+    private async updatePaymentIntent() {
+        if (!this.amount || !this.email || !this.name) {
+            this.clientSecret = '';
+            this.elements = null;
             return;
         }
 
-        const elements = this.stripe.elements();
-        this.cardElement = elements.create('card', {
-            // M3 style options for Stripe Element
-            style: {
-                base: {
-                    iconColor: M3SysColors.primary,
-                    color: M3SysColors.onSurface,
-                    fontFamily: 'Roboto, sans-serif',
-                    fontSize: '16px',
-                    '::placeholder': {
-                        color: M3SysColors.onSurfaceVariant,
-                    },
+        try {
+            const response: any = await apiFetch({
+                path: '/charitym3/v1/donations/intent',
+                method: 'POST',
+                data: {
+                    amount: this.amount,
+                    currency: 'usd',
+                    frequency: this.frequency,
+                    name: this.name,
+                    email: this.email,
+                    on_behalf_of: this.onBehalfOf,
+                    earmark: this.earmark,
+                    campaign_id: this.campaignId,
                 },
-                invalid: {
-                    iconColor: M3SysColors.error,
-                    color: M3SysColors.error,
-                },
-            },
-        });
-
-        const stripeContainer = this.shadowRoot?.getElementById('stripe-card-element');
-        if (stripeContainer) {
-            this.cardElement.mount(stripeContainer);
-            this.cardElement.on('change', (event) => {
-                this.errorMessage = event.error ? event.error.message : '';
             });
+
+            if (response.success && response.clientSecret) {
+                this.clientSecret = response.clientSecret;
+                this.initializePaymentElement();
+            } else {
+                throw new Error(response.message || 'Could not create payment intent.');
+            }
+        } catch (error: any) {
+            this.errorMessage = error.message;
+        }
+    }
+
+    private initializePaymentElement() {
+        if (!this.stripe || !this.clientSecret) return;
+
+        this.elements = this.stripe.elements({ clientSecret: this.clientSecret });
+        const paymentElement = this.elements.create('payment', { /* layout options */ });
+
+        const stripeContainer = this.shadowRoot?.getElementById('stripe-payment-element');
+        if (stripeContainer) {
+            paymentElement.mount(stripeContainer);
         }
     }
 
     private handleAmountClick(selectedAmount: number) {
-        this.amount = selectedAmount * 100; // Convert to cents
-        this.customAmountInput = ''; // Clear custom input
+        const newAmount = selectedAmount * 100;
+        if (this.amount !== newAmount) {
+            this.amount = newAmount;
+            this.customAmountInput = '';
+            this.updatePaymentIntent();
+        }
     }
 
     private handleCustomAmountInput(e: Event) {
         const target = e.target as HTMLInputElement;
         this.customAmountInput = target.value;
         const parsedAmount = parseFloat(target.value) * 100;
-        this.amount = isNaN(parsedAmount) ? 0 : parsedAmount;
+        const newAmount = isNaN(parsedAmount) ? 0 : parsedAmount;
+        if (this.amount !== newAmount) {
+            this.amount = newAmount;
+            this.updatePaymentIntent();
+        }
     }
 
     private async handleSubmit(e: Event) {
         e.preventDefault();
-        if (!this.stripe || !this.cardElement || this.isLoading || !this.amount) {
+        if (!this.stripe || !this.elements || this.isLoading || !this.amount) {
             return;
         }
         this.isLoading = true;
         this.errorMessage = '';
 
-        const { error, paymentMethod } = await this.stripe.createPaymentMethod({
-            type: 'card',
-            card: this.cardElement,
-            billing_details: {
-                name: this.name,
-                email: this.email,
+        // The logic to save data to our DB will now be handled by a webhook
+        // after Stripe confirms the payment.
+        // We just need to confirm the payment on the client side.
+        const { error } = await this.stripe.confirmPayment({
+            elements: this.elements,
+            confirmParams: {
+                // The return_url is where the user will be redirected after payment.
+                // We will create a page for this.
+                return_url: `${window.location.origin}/donation-confirmation/`,
+                receipt_email: this.email,
             },
         });
 
-        if (error) {
+        if (error.type === "card_error" || error.type === "validation_error") {
             this.errorMessage = error.message || 'An unknown error occurred.';
-            this.isLoading = false;
-            return;
+        } else {
+            this.errorMessage = 'An unexpected error occurred. Please try again.';
         }
 
-        // Send paymentMethod.id and other data to our backend
-        try {
-            const nonce = window.wpApiSettings?.nonce || ''; // Nonce for REST API
-            const response = await fetch('/wp-json/charitym3/v1/donations/charge', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': nonce,
-                },
-                body: JSON.stringify({
-                    paymentMethodId: paymentMethod.id,
-                    amount: this.amount,
-                    currency: 'usd', // This could be a prop
-                    email: this.email,
-                    name: this.name,
-                    frequency: this.frequency,
-                    campaignId: this.campaignId,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to process donation.');
-            }
-
-            this.successMessage = data.message;
-            // Optionally clear form or redirect
-            // this.resetForm();
-
-        } catch (err: any) {
-            this.errorMessage = err.message;
-        } finally {
-            this.isLoading = false;
-        }
+        this.isLoading = false;
     }
 
     private getButtonText(): string {
@@ -274,16 +296,42 @@ export class CharityDonationForm extends LitElement {
                         class=${stylex.props(styles.customAmount).className}
                     ></md-outlined-text-field>
                 </div>
+
+                <!-- Fields that are needed for payment intent -->
                 <md-outlined-text-field label="Full Name" type="text" .value=${this.name} @input=${(e: Event) => this.name = (e.target as HTMLInputElement).value} required></md-outlined-text-field>
                 <md-outlined-text-field label="Email Address" type="email" .value=${this.email} @input=${(e: Event) => this.email = (e.target as HTMLInputElement).value} required></md-outlined-text-field>
-                <div>
-                    <label>${__('Card Details', 'charity-m3')}</label>
-                    <div id="stripe-card-element" ${stylex.props(styles.stripeElementContainer)}>
-                        <!-- Stripe Card Element will be mounted here -->
-                    </div>
+
+                <!-- Optional Fields -->
+                <div style="border-top: 1px solid ${M3SysColors.outlineVariant}; padding-top: 1rem; margin-top: 0.5rem;">
+                    <md-outlined-text-field
+                        label="On Behalf of (Optional)"
+                        .value=${this.onBehalfOf}
+                        @input=${(e: Event) => this.onBehalfOf = (e.target as HTMLInputElement).value}
+                    ></md-outlined-text-field>
                 </div>
+
+                ${this.earmarkOptions.length > 1 ? html`
+                    <div>
+                        <label for="earmark-select">${__('Earmark Donation (Optional)', 'charity-m3')}</label>
+                        <select
+                            id="earmark-select"
+                            .value=${this.earmark}
+                            @change=${(e: Event) => this.earmark = (e.target as HTMLSelectElement).value}
+                            style="width: 100%; padding: 1rem; border: 1px solid ${M3SysColors.outline}; border-radius: 4px; background-color: ${M3SysColors.surface}; color: ${M3SysColors.onSurface};"
+                        >
+                            ${this.earmarkOptions.map(opt => html`
+                                <option value=${opt.id}>${opt.label}</option>
+                            `)}
+                        </select>
+                    </div>
+                ` : nothing}
+
+                <!-- Stripe Payment Element will be mounted here, only when we have a client secret -->
+                <div id="stripe-payment-element" ?hidden=${!this.clientSecret} ${stylex.props(styles.stripeElementContainer)}></div>
+
                 <div id="card-errors" role="alert" ${stylex.props(styles.errorMessage)}>${this.errorMessage}</div>
-                <charity-button type="submit" variant="filled" ?disabled=${this.isLoading || !this.amount}>
+
+                <charity-button type="submit" variant="filled" ?disabled=${this.isLoading || !this.clientSecret}>
                     ${this.getButtonText()}
                 </charity-button>
             </form>
