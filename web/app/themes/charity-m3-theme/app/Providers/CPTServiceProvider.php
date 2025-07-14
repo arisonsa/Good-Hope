@@ -15,8 +15,48 @@ class CPTServiceProvider extends ServiceProvider
     {
         add_action('init', [$this, 'registerProgramCPT']);
         add_action('init', [$this, 'registerImpactStoryCPT']);
+        add_action('init', [$this, 'registerAlertCPT']);
         // Optional: Register taxonomies here as well
         // add_action('init', [$this, 'registerProgramCategoryTaxonomy']);
+    }
+
+    /**
+     * Register the 'Alert' Custom Post Type.
+     */
+    public function registerAlertCPT()
+    {
+        $labels = [
+            'name'                  => _x('Alerts', 'Post type general name', 'charity-m3'),
+            'singular_name'         => _x('Alert', 'Post type singular name', 'charity-m3'),
+            'menu_name'             => _x('Crisis Alerts', 'Admin Menu text', 'charity-m3'),
+            'add_new_item'          => __('Add New Alert', 'charity-m3'),
+            'edit_item'             => __('Edit Alert', 'charity-m3'),
+            'new_item'              => __('New Alert', 'charity-m3'),
+        ];
+        $args = [
+            'labels'             => $labels,
+            'public'             => false, // Not for public browsing
+            'publicly_queryable' => false,
+            'show_ui'            => true,
+            'show_in_menu'       => true,
+            'show_in_nav_menus'  => false,
+            'exclude_from_search'=> true,
+            'query_var'          => false,
+            'rewrite'            => false,
+            'capability_type'    => 'post',
+            'has_archive'        => false,
+            'hierarchical'       => false,
+            'menu_position'      => 5, // High priority
+            'menu_icon'          => 'dashicons-warning',
+            'supports'           => ['title', 'editor', 'custom-fields'],
+            'show_in_rest'       => true, // Needed for Customizer control
+        ];
+        register_post_type('alert', $args);
+
+        // Register meta fields
+        register_post_meta('alert', '_alert_link_url', ['type' => 'string', 'single' => true, 'show_in_rest' => true, 'sanitize_callback' => 'esc_url_raw']);
+        register_post_meta('alert', '_alert_button_text', ['type' => 'string', 'single' => true, 'show_in_rest' => true, 'sanitize_callback' => 'sanitize_text_field']);
+        register_post_meta('alert', '_alert_urgency', ['type' => 'string', 'single' => true, 'show_in_rest' => true, 'sanitize_callback' => 'sanitize_text_field']);
     }
 
     /**
