@@ -20,7 +20,7 @@
       @yield('content')
     </main>
 
-    @include('partials.footer')
+    <x-m3-footer />
   </div>
 
   @php(wp_footer())
