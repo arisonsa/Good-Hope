@@ -47,13 +47,18 @@ class AdminManager
         // Our top-level page hook is 'toplevel_page_charity-m3-analytics'
         // Submenu page hooks are like 'newsletter_page_charity-m3-donations'
         if ($hook_suffix === 'toplevel_page_charity-m3-analytics') {
-            $dashboard_asset = \Roots\asset('scripts/admin/analytics-dashboard.js');
-            if ($dashboard_asset->exists()) {
+            // Output the Vite HMR client script in development
+            if ($hmr_script = \App\Vite::hmrScript()) {
+                echo $hmr_script;
+            }
+
+            $dashboard_asset_uri = \App\Vite::uri('resources/scripts/admin/analytics-dashboard-loader.ts');
+            if ($dashboard_asset_uri) {
                 wp_enqueue_script(
                     'charity-m3-analytics-dashboard-script',
-                    $dashboard_asset->uri(),
+                    $dashboard_asset_uri,
                     ['wp-api-fetch'], // Dependency for apiFetch
-                    $dashboard_asset->version(),
+                    false, // Versioning is handled by Vite
                     true
                 );
             }

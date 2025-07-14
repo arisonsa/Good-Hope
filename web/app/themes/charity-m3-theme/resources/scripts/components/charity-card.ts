@@ -125,7 +125,7 @@ export class CharityCard extends LitElement {
   private renderCardContent() {
     return html`
       ${this.imageUrl ?
-        html`<img class="card-media" src=${this.imageUrl} alt=${this.imageAlt || this.title || ''} ${stylex.props(cardStyles.media)} />` :
+        html`<img class="card-media" src=${this.imageUrl} alt=${this.imageAlt || this.title || ''} loading="lazy" ${stylex.props(cardStyles.media)} />` :
         nothing
       }
       ${(this.title || this.subtitle) ?

@@ -24,19 +24,25 @@ class NewsletterSignupBlock
         // First, register the script. The actual JS file will be created later.
         // This assumes you'll have a dedicated JS entry point for your blocks,
         // or include block JS in your main.js and provide the correct handle.
-        // For this example, let's assume 'charity-m3-theme-blocks' will be a new entry point.
-        wp_register_script(
-            'charity-m3-theme-newsletter-block-editor',
-            \Roots\asset('scripts/blocks/newsletter-signup.editor.js')->uri(), // Will be created
-            ['wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
-            null, // Version will be handled by Mix
-            true
-        );
+        // This assumes the block.json for this block has been updated to use a handle
+        // like 'charity-m3-newsletter-signup-editor-script'
+        $editor_script_handle = 'charity-m3-newsletter-signup-editor-script';
+        $editor_asset_uri = \App\Vite::uri('app/Blocks/NewsletterSignup/newsletter-signup.editor.js');
+
+        if ($editor_asset_uri) {
+             wp_register_script(
+                $editor_script_handle,
+                $editor_asset_uri,
+                ['wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
+                false,
+                true
+            );
+        }
 
         // Register the block type.
         register_block_type_from_metadata(CHARITY_M3_THEME_PATH . 'app/Blocks/NewsletterSignup', [
             'render_callback' => [$this, 'render'],
-            'editor_script' => 'charity-m3-theme-newsletter-block-editor', // For editor-side JS
+            'editor_script' => $editor_script_handle,
             // 'style' => 'charity-m3-theme-main', // If frontend styles are in main.css
             // 'editor_style' => 'charity-m3-theme-main', // If editor styles are in main.css
         ]);

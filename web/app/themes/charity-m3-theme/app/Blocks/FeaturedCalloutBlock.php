@@ -20,20 +20,19 @@ class FeaturedCalloutBlock
     {
         // Define the handle matching block.json's editorScript
         $editor_script_handle = 'charity-m3-featured-callout-editor-script';
-        $editor_asset_path = \Roots\asset('scripts/blocks/featured-callout-editor.js');
+        $editor_asset_uri = \App\Vite::uri('app/Blocks/FeaturedCallout/edit.js');
 
-        if ($editor_asset_path->exists()) {
+        if ($editor_asset_uri) {
             wp_register_script(
                 $editor_script_handle,
-                $editor_asset_path->uri(),
-                ['wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n', 'wp-polyfill', 'uuid'], // Added uuid
-                $editor_asset_path->version(), // Use filemtime for versioning if manifest doesn't provide it
-                true // In footer
+                $editor_asset_uri,
+                ['wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n', 'wp-polyfill', 'uuid'],
+                false,
+                true
             );
         } else {
-            // Log error or add admin notice if script is missing in development
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("Featured Callout editor script not found at: " . $editor_asset_path->path());
+                error_log("Featured Callout editor script not found for Vite.");
             }
         }
 

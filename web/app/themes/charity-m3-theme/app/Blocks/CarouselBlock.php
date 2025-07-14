@@ -17,14 +17,16 @@ class CarouselBlock
     public function registerBlock()
     {
         $editor_script_handle = 'charity-m3-carousel-editor-script';
-        $editor_asset_path = \Roots\asset('scripts/blocks/carousel-editor.js');
 
-        if ($editor_asset_path->exists()) {
+        // The asset path needs to match an entry point in vite.config.ts
+        $editor_asset_uri = \App\Vite::uri('app/Blocks/Carousel/edit.js');
+
+        if ($editor_asset_uri) {
             wp_register_script(
                 $editor_script_handle,
-                $editor_asset_path->uri(),
+                $editor_asset_uri,
                 ['wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
-                $editor_asset_path->version(),
+                false, // Versioning is handled by Vite manifest
                 true
             );
         }
