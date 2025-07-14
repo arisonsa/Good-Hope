@@ -12,6 +12,41 @@ class CustomizerManager
 
     public function registerCustomizerSettings(\WP_Customize_Manager $wp_customize)
     {
+        // --- Homepage Settings Section ---
+        $wp_customize->add_section('homepage_settings_section', [
+            'title'    => __('Homepage Settings', 'charity-m3'),
+            'priority' => 20,
+        ]);
+
+        // Get available alerts for the dropdown
+        $alerts = get_posts([
+            'post_type' => 'alert',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+        ]);
+        $alert_choices = ['none' => __('— None —', 'charity-m3')];
+        if ($alerts) {
+            foreach ($alerts as $alert) {
+                $alert_choices[$alert->ID] = $alert->post_title;
+            }
+        }
+
+        // Active Alert Setting
+        $wp_customize->add_setting('homepage_active_alert', [
+            'default'   => 'none',
+            'transport' => 'refresh',
+            'sanitize_callback' => 'absint', // or a custom callback to validate post ID
+        ]);
+        $wp_customize->add_control('homepage_active_alert_control', [
+            'label'    => __('Active Crisis Alert', 'charity-m3'),
+            'description' => __('Select an alert to feature prominently at the top of the homepage. To create a new alert, go to the "Crisis Alerts" menu in the dashboard.', 'charity-m3'),
+            'section'  => 'homepage_settings_section',
+            'settings' => 'homepage_active_alert',
+            'type'     => 'select',
+            'choices'  => $alert_choices,
+        ]);
+
+
         // --- Site Identity Panel (for Logo) ---
         // WordPress already has a 'title_tagline' section for site title, tagline, and logo.
         // We just ensure our theme supports custom logo.
