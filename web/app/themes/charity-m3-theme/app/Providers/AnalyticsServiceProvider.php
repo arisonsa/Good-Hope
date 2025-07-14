@@ -35,6 +35,16 @@ class AnalyticsServiceProvider extends ServiceProvider
             'callback' => [$this, 'getSubscribersOverTime'],
             'permission_callback' => fn() => current_user_can('manage_options'),
         ]);
+
+        // Endpoint for general donation stats
+        register_rest_route('charitym3/v1', '/stats/donations', [
+            'methods' => 'GET',
+            'callback' => function (\WP_REST_Request $request) {
+                $analyticsService = $this->app->make(AnalyticsService::class);
+                return $analyticsService->get_donation_stats($request);
+            },
+            'permission_callback' => fn() => current_user_can('manage_options'),
+        ]);
     }
 
     public function getDonationsOverTime(\WP_REST_Request $request)

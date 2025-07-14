@@ -20,6 +20,8 @@ import './components/charity-counter'; // Registers <charity-counter>
 import './components/charity-testimonial'; // Registers <charity-testimonial>
 import './components/mobile-nav-toggle'; // Registers <mobile-nav-toggle>
 import './components/analytics-dashboard'; // Registers <analytics-dashboard>
+import './components/donate-dropdown-button'; // Registers <donate-dropdown-button>
+import './components/donation-status'; // Registers <donation-status>
 
 // Example:
 

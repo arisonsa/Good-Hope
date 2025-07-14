@@ -25,6 +25,7 @@ class DonationServiceProvider extends ServiceProvider
     {
         add_action('rest_api_init', [$this, 'registerDonationRoutes']);
         add_action('rest_api_init', [$this, 'registerWebhookRoutes']);
+        add_action('rest_api_init', [$this, 'registerEarmarkRoutes']);
 
         // Handle form post for creating customer portal session
         add_action('admin_post_nopriv_charity_m3_create_customer_portal_session', [$this, 'redirectToLogin']);
@@ -33,62 +34,86 @@ class DonationServiceProvider extends ServiceProvider
 
     public function registerDonationRoutes()
     {
-        register_rest_route('charitym3/v1', '/donations/charge', [
+        // Endpoint to create a payment intent and get a client secret for the Payment Element
+        register_rest_route('charitym3/v1', '/donations/intent', [
             'methods' => 'POST',
-            'callback' => [$this, 'handleDonationCharge'],
-            'permission_callback' => '__return_true', // Publicly accessible, but protected by nonce
+            'callback' => [$this, 'handleCreatePaymentIntent'],
+            'permission_callback' => fn () => is_user_logged_in(),
             'args' => [
                 'amount' => ['required' => true, 'validate_callback' => 'is_numeric'],
                 'currency' => ['required' => true, 'sanitize_callback' => 'sanitize_text_field'],
-                'paymentMethodId' => ['required' => true, 'sanitize_callback' => 'sanitize_text_field'],
-                'email' => ['required' => true, 'validate_callback' => 'is_email', 'sanitize_callback' => 'sanitize_email'],
-                'name' => ['required' => false, 'sanitize_callback' => 'sanitize_text_field'],
-                'frequency' => ['required' => true, 'sanitize_callback' => 'sanitize_text_field'],
-                'campaignId' => ['required' => false, 'validate_callback' => 'is_numeric'],
-                // Add nonce validation here in args if desired for automatic handling
-                // 'nonce' => ['required' => true, 'sanitize_callback' => 'sanitize_text_field'],
+                'frequency' => [
+                    'required' => true,
+                    'validate_callback' => function ($param, $request, $key) {
+                        return in_array($param, ['one-time', 'monthly']);
+                    }
+                ],
+            ],
+        ]);
+
+        // Endpoint to check the status of a donation after redirect
+        register_rest_route('charitym3/v1', '/donations/status/(?P<id>pi_[\w]+)', [
+            'methods' => 'GET',
+            'callback' => [$this, 'handleGetDonationStatus'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'id' => [
+                    'validate_callback' => function ($param, $request, $key) {
+                        return is_string($param) && strpos($param, 'pi_') === 0;
+                    }
+                ]
             ],
         ]);
     }
 
-    public function handleDonationCharge(\WP_REST_Request $request)
+    public function handleCreatePaymentIntent(\WP_REST_Request $request)
     {
-        // Manual nonce check if not handled in args
-        $nonce = $request->get_header('X-WP-Nonce');
-        if (!wp_verify_nonce($nonce, 'wp_rest')) {
-            return new \WP_Error('rest_nonce_invalid', __('Nonce is invalid.', 'charity-m3'), ['status' => 403]);
-        }
-
-        /** @var DonationService $donationService */
-        $donationService = $this->app->make(DonationService::class);
-
-        $amount = (int) $request->get_param('amount');
-        $currency = $request->get_param('currency');
-        $paymentMethodId = $request->get_param('paymentMethodId');
-        $email = $request->get_param('email');
+        $params = $request->get_json_params();
+        $amount = $params['amount'] ?? 0;
+        $currency = $params['currency'] ?? 'usd';
+        $frequency = $params['frequency'] ?? 'one-time';
+        $name = sanitize_text_field($params['name'] ?? '');
+        $email = sanitize_email($params['email'] ?? '');
+        $onBehalfOf = sanitize_text_field($params['on_behalf_of'] ?? '');
+        $earmark = sanitize_text_field($params['earmark'] ?? 'general_fund');
+        $campaignId = isset($params['campaign_id']) ? absint($params['campaign_id']) : null;
 
         $metadata = [
-            'donor_name' => $request->get_param('name'),
-            'frequency' => $request->get_param('frequency'),
-            'campaign_id' => $request->get_param('campaignId'),
+            'name' => $name,
+            'email' => $email,
+            'on_behalf_of' => $onBehalfOf,
+            'earmark' => $earmark,
+            'frequency' => $frequency,
+            'campaign_id' => $campaignId,
         ];
 
-        $result = $donationService->processStripeDonation($amount, $currency, $paymentMethodId, $email, $metadata);
+        $donationService = $this->app->make(DonationService::class);
+        $clientSecret = $donationService->createPaymentIntent($amount, $currency, $frequency, $metadata);
 
-        if (is_wp_error($result)) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => $result->get_error_message(),
-                'code' => $result->get_error_code(),
-            ], 400); // Bad Request or appropriate status code
+        if (is_wp_error($clientSecret)) {
+            return new \WP_REST_Response(['success' => false, 'message' => $clientSecret->get_error_message()], 400);
         }
 
-        return new \WP_REST_Response([
-            'success' => true,
-            'message' => __('Thank you for your donation!', 'charity-m3'),
-            'donation' => $result, // The saved donation record
-        ], 200);
+        return new \WP_REST_Response(['success' => true, 'clientSecret' => $clientSecret], 200);
     }
+
+    public function handleGetDonationStatus(\WP_REST_Request $request)
+    {
+        $paymentIntentId = $request->get_param('id');
+        $donationService = $this->app->make(DonationService::class);
+
+        try {
+            $status = $donationService->getPaymentIntentStatus($paymentIntentId);
+            $message = 'Your donation has been received. A confirmation email has been sent to you.';
+            if ($status !== 'succeeded') {
+                $message = 'Your donation is still processing. We will send a confirmation email once it is complete.';
+            }
+            return new \WP_REST_Response(['success' => true, 'status' => $status, 'message' => $message], 200);
+        } catch (\Exception $e) {
+            return new \WP_REST_Response(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
 
     public function redirectToLogin()
     {
@@ -147,5 +172,41 @@ class DonationServiceProvider extends ServiceProvider
             },
             'permission_callback' => '__return_true', // Permission is handled by signature verification
         ]);
+    }
+
+    public function registerEarmarkRoutes()
+    {
+        register_rest_route('charitym3/v1', '/earmark-options', [
+            'methods' => 'GET',
+            'callback' => [$this, 'getEarmarkOptions'],
+            'permission_callback' => '__return_true', // Publicly queryable
+        ]);
+    }
+
+    public function getEarmarkOptions()
+    {
+        $programs = get_posts([
+            'post_type' => 'program',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'orderby' => 'title',
+            'order' => 'ASC',
+        ]);
+
+        if (empty($programs)) {
+            return new \WP_REST_Response([], 200);
+        }
+
+        $options = array_map(function ($post) {
+            return [
+                'id' => 'program_' . $post->ID, // Unique value for earmark
+                'label' => $post->post_title,
+            ];
+        }, $programs);
+
+        // Add a default/general option
+        array_unshift($options, ['id' => 'general_fund', 'label' => __('General Fund', 'charity-m3')]);
+
+        return new \WP_REST_Response($options, 200);
     }
 }

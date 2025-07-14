@@ -64,6 +64,8 @@ class DonationsListTable extends \WP_List_Table
             'donor'    => __('Donor', 'charity-m3'),
             'amount'   => __('Amount', 'charity-m3'),
             'frequency' => __('Frequency', 'charity-m3'),
+            'earmark' => __('Earmarked For', 'charity-m3'),
+            'on_behalf_of' => __('On Behalf Of', 'charity-m3'),
             'status'   => __('Status', 'charity-m3'),
             'gateway_transaction_id' => __('Transaction ID', 'charity-m3'),
             'donated_at' => __('Date', 'charity-m3'),
@@ -84,9 +86,10 @@ class DonationsListTable extends \WP_List_Table
     {
         switch ($column_name) {
             case 'status':
-                return esc_html(ucfirst($item->$column_name));
+                return esc_html(ucfirst($item->status));
+            case 'on_behalf_of':
+                return esc_html($item->on_behalf_of ?: '—');
             case 'gateway_transaction_id':
-                // Could link to Stripe dashboard if desired
                 return esc_html($item->gateway_transaction_id);
             case 'donated_at':
                 return esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $item->donated_at));
@@ -121,6 +124,23 @@ class DonationsListTable extends \WP_List_Table
             $output .= '<br><small style="color: #777;">' . sprintf(__('Sub ID: %s', 'charity-m3'), esc_html($item->stripe_subscription_id)) . '</small>';
         }
         return $output;
+    }
+
+    protected function column_earmark($item)
+    {
+        if (empty($item->earmark) || $item->earmark === 'general_fund') {
+            return __('General Fund', 'charity-m3');
+        }
+
+        if (str_starts_with($item->earmark, 'program_')) {
+            $program_id = (int) str_replace('program_', '', $item->earmark);
+            $program_title = get_the_title($program_id);
+            if ($program_title) {
+                return '<a href="' . get_edit_post_link($program_id) . '">' . esc_html($program_title) . '</a>';
+            }
+        }
+
+        return esc_html($item->earmark); // Fallback
     }
 
     public function no_items()

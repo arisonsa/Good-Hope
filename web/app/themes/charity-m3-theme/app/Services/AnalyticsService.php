@@ -93,4 +93,47 @@ class AnalyticsService
         set_transient($transient_key, $results, 3 * HOUR_IN_SECONDS); // Cache for 3 hours
         return $results;
     }
+
+    public function get_donation_stats(\WP_REST_Request $request)
+    {
+        $days = $request->get_param('days') ?? 30;
+        $stats = $this->query_donation_stats($days);
+        $stats['earmark_breakdown'] = $this->query_earmark_breakdown($days);
+        return new \WP_REST_Response($stats, 200);
+    }
+
+    public function query_donation_stats(int $days = 30): array
+    {
+        $donations_table = $this->db->prefix . 'charity_m3_donations';
+        $sql = $this->db->prepare(
+            "SELECT
+                SUM(amount / 100) as total_raised,
+                COUNT(id) as total_donations,
+                AVG(amount / 100) as average_donation,
+                COUNT(DISTINCT donor_email) as unique_donors
+            FROM {$donations_table}
+            WHERE status = 'succeeded' AND donated_at >= %s",
+            date('Y-m-d H:i:s', strtotime("-{$days} days"))
+        );
+        $stats = $this->db->get_row($sql, ARRAY_A);
+        return array_map('floatval', $stats);
+    }
+
+    public function query_earmark_breakdown(int $days = 30): array
+    {
+        $donations_table = $this->db->prefix . 'charity_m3_donations';
+        $sql = $this->db->prepare(
+            "SELECT
+                earmark,
+                SUM(amount / 100) as total_amount,
+                COUNT(id) as donation_count
+            FROM {$donations_table}
+            WHERE status = 'succeeded' AND donated_at >= %s
+            GROUP BY earmark
+            ORDER BY total_amount DESC",
+            date('Y-m-d H:i:s', strtotime("-{$days} days"))
+        );
+        $results = $this->db->get_results($sql, ARRAY_A);
+        return $results;
+    }
 }
